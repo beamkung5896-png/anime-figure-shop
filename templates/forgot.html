@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}ลืมรหัสผ่าน · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="page narrow">
+  <form class="auth-card form" method="post" novalidate>
+    <h1>ลืมรหัสผ่าน</h1>
+    {% if sent %}
+      <p class="note">ถ้าอีเมลนี้เป็นสมาชิกอยู่ เราได้ส่งลิงก์ตั้งรหัสผ่านใหม่ไปให้แล้ว (ลิงก์ใช้ได้ 1 ชั่วโมง) ตรวจกล่องจดหมายและโฟลเดอร์สแปมด้วยนะ
+        ถ้าไม่ได้รับ ติดต่อร้านเพื่อให้ช่วยสร้างลิงก์ให้ได้</p>
+    {% else %}
+      <p class="muted">กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ให้</p>
+    {% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="email">อีเมล</label>
+    <input id="email" name="email" type="email" autocomplete="email" autofocus required>
+    <button class="btn btn-primary" type="submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+    <p class="auth-links"><a href="{{ url_for('customers.login') }}">กลับไปเข้าสู่ระบบ</a></p>
+  </form>
+</section>
+{% endblock %}

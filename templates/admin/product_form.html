@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'แก้ไขสินค้า' if p else 'เพิ่มสินค้า' }}{% endblock %}
+{% block content %}
+<div class="head-row"><h1>{{ 'แก้ไขสินค้า' if p else 'เพิ่มสินค้า' }}</h1>
+  <a href="{{ url_for('admin.products') }}">กลับรายการสินค้า</a></div>
+
+{% if errors %}<ul class="errors" role="alert">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+<form class="panel form-grid" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="fields">
+    <label for="name">ชื่อสินค้า</label>
+    <input id="name" name="name" value="{{ form.name or '' }}" maxlength="120" required>
+
+    <div class="two">
+      <div><label for="category">หมวดหมู่</label>
+        <input id="category" name="category" list="cats" value="{{ form.category or '' }}" required>
+        <datalist id="cats">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist></div>
+      <div><label for="scale">สเกล / ประเภท</label>
+        <input id="scale" name="scale" value="{{ form.scale or '' }}" placeholder="เช่น 1/7 หรือ ฟิกเกอร์ PVC"></div>
+    </div>
+
+    <div class="two">
+      <div><label for="price">ราคา (บาท)</label>
+        <input id="price" name="price" type="number" min="0" step="1" value="{{ form.price if form.price is not none else '' }}" required></div>
+      <div><label for="stock">จำนวนสต็อก</label>
+        <input id="stock" name="stock" type="number" min="0" step="1" value="{{ form.stock if form.stock is not none else '' }}" required></div>
+    </div>
+
+    <label for="description">รายละเอียด</label>
+    <textarea id="description" name="description" rows="5">{{ form.description or '' }}</textarea>
+  </div>
+
+  <div class="imgbox">
+    <label for="image">รูปสินค้า (JPG / PNG / WEBP ไม่เกิน 5MB)</label>
+    <div class="preview" id="preview" style="--bg: {{ form.bg }}; --fit: {{ form.fit }}">
+      {% if p %}<img id="pimg" src="{{ url_for('static', filename='images/' ~ p['image'] ~ '.' ~ p['image_ext']) }}" alt="">
+      {% else %}<img id="pimg" alt="" hidden>{% endif %}
+    </div>
+    <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" {{ '' if p else 'required' }}>
+    {% if p %}<p class="muted small">ไม่เลือกไฟล์ใหม่ = ใช้รูปเดิม</p>{% endif %}
+
+    <div class="two">
+      <div><label for="bg">สีพื้นหลังการ์ด</label>
+        <input id="bg" name="bg" type="color" value="{{ form.bg }}"></div>
+      <div><label for="fit">การจัดรูป</label>
+        <select id="fit" name="fit">
+          <option value="contain" {{ 'selected' if form.fit == 'contain' }}>แสดงเต็มรูป (ไม่ตัด)</option>
+          <option value="cover" {{ 'selected' if form.fit == 'cover' }}>เต็มการ์ด (อาจตัดขอบ)</option>
+        </select></div>
+    </div>
+    <p class="muted small">แนะนำให้เลือกสีพื้นหลังให้เหมือนสีฉากหลังของรูป การ์ดจะดูกลืนกัน</p>
+  </div>
+
+  <div class="submit-row">
+    <button class="btn" type="submit">บันทึก</button>
+    <a href="{{ url_for('admin.products') }}">ยกเลิก</a>
+  </div>
+</form>
+
+<script>
+  // แสดงตัวอย่างรูป/สี/การจัดรูปแบบสด ก่อนกดบันทึก
+  const pv = document.getElementById("preview"), pimg = document.getElementById("pimg");
+  document.getElementById("image").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (f) { pimg.src = URL.createObjectURL(f); pimg.hidden = false; }
+  });
+  document.getElementById("bg").addEventListener("input", (e) => pv.style.setProperty("--bg", e.target.value));
+  document.getElementById("fit").addEventListener("change", (e) => pv.style.setProperty("--fit", e.target.value));
+</script>
+{% endblock %}

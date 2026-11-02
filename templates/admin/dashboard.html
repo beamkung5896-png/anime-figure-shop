@@ -1,0 +1,78 @@
+{% extends "admin/base.html" %}
+{% block title %}ภาพรวม{% endblock %}
+{% block content %}
+<h1>ภาพรวมร้าน</h1>
+
+{% if default_pw %}
+<div class="notice warn" role="alert">คุณยังใช้รหัสผ่านเริ่มต้นอยู่ <a href="{{ url_for('admin.password') }}">เปลี่ยนรหัสผ่านตอนนี้</a> ก่อนเปิดร้านจริง</div>
+{% endif %}
+
+<section class="stats">
+  <div class="stat"><span>ยอดขายที่ได้รับเงินแล้ว</span><strong>{{ revenue|baht }}</strong><small>ออเดอร์ชำระแล้วและจัดส่งแล้ว</small></div>
+  <div class="stat"><span>รอชำระเงิน</span><strong>{{ awaiting|baht }}</strong><small>{{ counts['pending'] }} ออเดอร์{% if with_slip %} · <b>{{ with_slip }} ส่งสลิปแล้ว รอตรวจ</b>{% endif %}</small></div>
+  <div class="stat"><span>รอจัดส่ง</span><strong>{{ counts['paid'] }}</strong><small>ชำระแล้วแต่ยังไม่ส่ง</small></div>
+  <div class="stat"><span>ลูกค้าสมาชิก</span><strong>{{ customers }}</strong><small><a href="{{ url_for('admin.customers') }}">+{{ new_customers }} ใน 7 วัน</a>{% if new_reviews %} · <a href="{{ url_for('admin.reviews') }}">รีวิวใหม่ {{ new_reviews }}</a>{% endif %}</small></div>
+  <div class="stat"><span>สินค้าที่ขายอยู่</span><strong>{{ product_count }}</strong><small>แบบ</small></div>
+</section>
+
+<div class="cols">
+  <section class="panel">
+    <h2>ยอดขาย 7 วันล่าสุด</h2>
+    <div class="bars" role="img" aria-label="กราฟยอดขาย 7 วันล่าสุด">
+      {% for c in chart %}
+      <a class="bar bar-link" href="{{ url_for('admin.orders', d1=c['iso'], d2=c['iso']) }}" title="กดดูออเดอร์วันที่ {{ c['label'] }}">
+        <span class="bar-val">{{ c['amount']|baht if c['amount'] else '–' }}</span>
+        <div class="bar-fill" style="height: {{ c['pct'] }}%"></div>
+        <span class="bar-label">{{ c['label'] }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    <p class="muted small">ไม่นับออเดอร์ที่ยกเลิก · กดที่แท่งเพื่อดูออเดอร์ของวันนั้น</p>
+    <form class="datebar" method="get" action="{{ url_for('admin.orders') }}" aria-label="ดูออเดอร์ตามวันที่">
+      <label>จากวันที่ <input type="date" name="d1" max="{{ today_iso }}" required></label>
+      <label>ถึงวันที่ <input type="date" name="d2" max="{{ today_iso }}" required></label>
+      <button class="btn btn-small" type="submit">ดูออเดอร์</button>
+      <a class="btn btn-ghost btn-small" href="{{ url_for('admin.reports', period='range') }}">รายงานตามช่วงวันที่</a>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>สินค้าใกล้หมด</h2>
+    {% if low_stock %}
+    <ul class="plain">
+      {% for p in low_stock %}
+      <li><a href="{{ url_for('admin.product_form', pid=p['id']) }}">{{ p['name'] }}</a>
+        <span class="pill {{ 'cancelled' if p['stock'] == 0 else 'pending' }}">{{ 'หมดแล้ว' if p['stock'] == 0 else 'เหลือ ' ~ p['stock'] }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">ทุกชิ้นมีสต็อกมากกว่า {{ low }} ชิ้น</p>{% endif %}
+  </section>
+</div>
+
+<div class="cols">
+  <section class="panel">
+    <h2>ออเดอร์ล่าสุด <a class="more" href="{{ url_for('admin.orders') }}">ดูทั้งหมด</a></h2>
+    {% if recent %}
+    <table>
+      <thead><tr><th>เลขที่</th><th>ลูกค้า</th><th class="num">ยอด</th><th>สถานะ</th></tr></thead>
+      <tbody>
+      {% for o in recent %}
+        <tr><td><a href="{{ url_for('admin.order_detail', oid=o['id']) }}">#{{ '%05d' % o['id'] }}</a></td>
+            <td>{{ o['customer'] }}</td><td class="num">{{ o['total']|baht }}</td>
+            <td><span class="pill {{ o['status'] }}">{{ o['status']|status_label }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">ยังไม่มีออเดอร์</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>ขายดี <a class="more" href="{{ url_for('admin.reports') }}">รายงานรายเดือน/ปี</a></h2>
+    {% if best %}
+    <ol class="plain ranked">
+      {% for b in best %}<li><span>{{ b['name'] }}</span><span class="muted">{{ b['sold'] }} ชิ้น · {{ b['amount']|baht }}</span></li>{% endfor %}
+    </ol>
+    {% else %}<p class="muted">ยังไม่มียอดขาย</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

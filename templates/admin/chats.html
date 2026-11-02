@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% block title %}แชทลูกค้า{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>แชทลูกค้า</h1>
+  <a class="btn btn-ghost" href="{{ url_for('admin.chats', closed=None if show_closed else 1) }}">{{ 'กลับไปแชทที่เปิดอยู่' if show_closed else 'ดูแชทที่ปิดแล้ว' }}</a>
+</div>
+<p class="muted small">{% if ai %}AI จริงทำงานอยู่{% else %}ยังไม่ได้ตั้ง GEMINI_API_KEY ใน .env — บอทตอบด้วยกฎสำเร็จรูปแล้วส่งต่อแอดมิน{% endif %} · แอดมินพิมพ์ตอบในห้องไหน AI จะหยุดตอบห้องนั้นอัตโนมัติ (สลับกลับให้ AI ตอบต่อได้)</p>
+<div class="panel flush"><div class="table-wrap">
+<table>
+  <thead><tr><th>ลูกค้า</th><th>ข้อความล่าสุด</th><th>โหมด</th><th>เวลา</th></tr></thead>
+  <tbody>
+  {% for t in threads %}
+    <tr class="{{ 'unread' if t['unread'] }}">
+      <td><a href="{{ url_for('admin.chat_detail', tid=t['id']) }}"><strong>{{ t['name'] or 'ผู้เยี่ยมชม #%d' % t['id'] }}</strong></a>
+        {% if t['unread'] %}<span class="pill slip">ใหม่</span>{% endif %}</td>
+      <td class="small">{{ {'customer': 'ลูกค้า', 'ai': 'AI', 'admin': 'คุณ'}.get(t['last_role'], '') }}: {{ (t['last_body'] or '')|truncate(70, True, '…') }}</td>
+      <td>{% if t['status'] == 'closed' %}<span class="pill cancelled">ปิดแล้ว</span>
+          {% elif t['handoff'] %}<span class="pill pending">ขอแอดมิน</span>
+          {% elif t['status'] == 'human' %}<span class="pill shipped">แอดมินดูแล</span>
+          {% else %}<span class="pill paid">AI ตอบ</span>{% endif %}</td>
+      <td class="small">{{ t['local_time'] }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">ยังไม่มีแชท</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+<script>setTimeout(function () { location.reload(); }, 15000);</script>
+{% endblock %}

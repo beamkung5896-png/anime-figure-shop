@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}เข้าสู่ระบบ · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="page narrow">
+  <form class="auth-card form" method="post" novalidate>
+    <h1>เข้าสู่ระบบ</h1>
+    {% if error %}<p class="errors" role="alert">{{ error }}</p>{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="email">อีเมล</label>
+    <input id="email" name="email" type="email" value="{{ email }}" autocomplete="email" autofocus required>
+    <label for="password">รหัสผ่าน</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="btn btn-primary" type="submit">เข้าสู่ระบบ</button>
+    <p class="auth-links"><a href="{{ url_for('customers.forgot') }}">ลืมรหัสผ่าน?</a>
+      <span>ยังไม่เป็นสมาชิก? <a href="{{ url_for('customers.register', next=request.args.get('next')) }}">สมัครฟรี</a></span></p>
+  </form>
+</section>
+{% endblock %}

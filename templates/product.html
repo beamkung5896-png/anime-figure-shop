@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ p['name'] }} · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="detail">
+  <div class="detail-stage" style="--bg: {{ p['bg'] }}; --fit: {{ p['fit'] }}">
+    <img src="{{ url_for('static', filename='images/' ~ p['image'] ~ '.' ~ p['image_ext']) }}" alt="{{ p['name'] }}">
+  </div>
+  <div class="detail-info">
+    <a class="back" href="{{ url_for('index') }}#shop">กลับไปหน้าร้าน</a>
+    <h1>{{ p['name'] }}</h1>
+    <p class="meta">{{ p['scale']|scale_label }} · หมวด{{ p['category'] }}</p>
+    {% if p['review_count'] %}<p class="rating"><span class="stars" aria-hidden="true">{{ '★' * (p['avg_rating']|round|int) }}{{ '☆' * (5 - (p['avg_rating']|round|int)) }}</span>
+      {{ p['avg_rating'] }} <a href="#reviews">({{ p['review_count'] }} รีวิว)</a></p>{% endif %}
+    <p class="price big">{{ p['price']|baht }}</p>
+    <p class="desc">{{ p['description'] }}</p>
+    {% if p['stock'] > 0 %}
+      <p class="stock">คงเหลือ {{ p['stock'] }} ชิ้น</p>
+      <div class="qty-row">
+        <label for="qty">จำนวน</label>
+        <input id="qty" type="number" min="1" max="{{ p['stock'] }}" value="1">
+        <button class="btn btn-primary js-add" data-id="{{ p['id'] }}" data-qty-input="#qty">ใส่ตะกร้า</button>
+      </div>
+    {% else %}
+      <p class="stock out">สินค้าหมด</p>
+    {% endif %}
+    <form class="wish-form" method="post" action="{{ url_for('customers.wishlist_toggle', pid=p['id']) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ url_for('product', pid=p['id']) }}">
+      <button class="btn btn-ghost" type="submit">{{ '♥ อยู่ในรายการโปรด (กดเพื่อเอาออก)' if p['id'] in wished else '♡ เพิ่มในรายการโปรด' }}</button>
+    </form>
+  </div>
+</section>
+
+<section class="reviews page" id="reviews">
+  <h2>รีวิวจากลูกค้า {% if p['review_count'] %}<span class="muted">· {{ p['avg_rating'] }}/5 จาก {{ p['review_count'] }} รีวิว</span>{% endif %}</h2>
+  {% if can_review %}
+  <form class="form review-form" method="post" action="{{ url_for('customers.review', pid=p['id']) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h3>{{ 'แก้ไขรีวิวของคุณ' if mine else 'เขียนรีวิว' }}</h3>
+    <div class="star-pick" role="radiogroup" aria-label="ให้คะแนน">
+      {% for n in [5, 4, 3, 2, 1] %}
+      <input type="radio" id="star{{ n }}" name="rating" value="{{ n }}" {% if mine and mine['rating'] == n %}checked{% endif %} required>
+      <label for="star{{ n }}" title="{{ n }} ดาว">★</label>
+      {% endfor %}
+    </div>
+    <label for="comment" class="sr">ความเห็น</label>
+    <textarea id="comment" name="comment" rows="3" maxlength="1000" placeholder="บอกเล่าความประทับใจ งานปั้น สี การแพ็กของ ฯลฯ">{{ mine['comment'] if mine else '' }}</textarea>
+    <button class="btn btn-primary" type="submit">{{ 'บันทึกรีวิว' if mine else 'ส่งรีวิว' }}</button>
+  </form>
+  {% elif user %}<p class="muted small">รีวิวได้เมื่อซื้อสินค้านี้และชำระเงินแล้ว</p>
+  {% else %}<p class="muted small"><a href="{{ url_for('customers.login', next=url_for('product', pid=p['id'])) }}">เข้าสู่ระบบ</a> เพื่อรีวิวสินค้าที่เคยซื้อ</p>{% endif %}
+
+  {% for r in reviews %}
+  <article class="review">
+    <p><span class="stars" aria-label="{{ r['rating'] }} ดาว">{{ '★' * r['rating'] }}{{ '☆' * (5 - r['rating']) }}</span>
+      <strong>{{ r['name'].split()[0] }}</strong> <span class="muted small">· {{ r['day'] }} · ซื้อแล้ว</span></p>
+    {% if r['comment'] %}<p class="pre">{{ r['comment'] }}</p>{% endif %}
+    {% if user and r['user_id'] == user['id'] %}
+    <form method="post" action="{{ url_for('customers.review_delete', rid=r['id']) }}" onsubmit="return confirm('ลบรีวิวของคุณ?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link-btn" type="submit">ลบรีวิว</button></form>
+    {% endif %}
+  </article>
+  {% else %}<p class="muted">ยังไม่มีรีวิว</p>{% endfor %}
+</section>
+{% endblock %}

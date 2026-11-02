@@ -1,0 +1,87 @@
+{% extends "admin/base.html" %}
+{% block title %}ออเดอร์ #{{ '%05d' % order['id'] }}{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>ออเดอร์ #{{ '%05d' % order['id'] }} <span class="pill {{ order['status'] }}">{{ order['status']|status_label }}</span></h1>
+  <span>
+    <a class="btn btn-small" href="{{ url_for('receipt', oid=order['id'], size='a4', print=1) }}" target="_blank" rel="noopener">🖨 พิมพ์ใบเสร็จ A4</a>
+    <a class="btn btn-small" href="{{ url_for('receipt', oid=order['id'], size='slip', print=1) }}" target="_blank" rel="noopener">🖨 พิมพ์สลิป 80 มม.</a>
+    <a href="{{ url_for('admin.orders') }}">กลับรายการออเดอร์</a>
+  </span>
+</div>
+
+<div class="cols">
+  <section class="panel">
+    <h2>รายการสินค้า</h2>
+    <table>
+      <thead><tr><th></th><th>สินค้า</th><th class="num">ราคา</th><th class="num">จำนวน</th><th class="num">รวม</th></tr></thead>
+      <tbody>
+      {% for l in lines %}
+        <tr><td><img class="thumb" src="{{ url_for('static', filename='images/' ~ l['image'] ~ '.' ~ l['image_ext']) }}" alt=""></td>
+            <td>{{ l['name'] }}</td><td class="num">{{ l['unit_price']|baht }}</td><td class="num">{{ l['qty'] }}</td>
+            <td class="num">{{ (l['qty'] * l['unit_price'])|baht }}</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        {% if order['discount'] or order['shipping'] or order['vat'] %}
+        <tr><td colspan="4" class="num muted">ยอดสินค้า</td><td class="num">{{ (order['total'] - order['vat'] - order['shipping'] + order['discount'])|baht }}</td></tr>
+        {% if order['discount'] %}<tr><td colspan="4" class="num muted">ส่วนลด {{ order['coupon'] }}</td><td class="num">−{{ order['discount']|baht }}</td></tr>{% endif %}
+        <tr><td colspan="4" class="num muted">ค่าจัดส่ง</td><td class="num">{{ order['shipping']|baht if order['shipping'] else 'ฟรี' }}</td></tr>
+        {% if order['vat'] %}<tr><td colspan="4" class="num muted">VAT 7%</td><td class="num">{{ order['vat']|baht }}</td></tr>{% endif %}
+        {% endif %}
+        <tr><td colspan="4" class="num"><strong>ยอดรวม</strong></td><td class="num"><strong>{{ order['total']|baht }}</strong></td></tr></tfoot>
+    </table>
+  </section>
+
+  <div class="stack">
+    <section class="panel">
+      <h2>ผู้รับ</h2>
+      <p><strong>{{ order['customer'] }}</strong><br><a href="tel:{{ order['phone'] }}">{{ order['phone'] }}</a></p>
+      <p class="pre">{{ order['address'] }}</p>
+      <p class="muted small">สั่งเมื่อ {{ order['local_time'] }}</p>
+      <p class="small">{% if member %}สมาชิก: <a href="{{ url_for('admin.customer_detail', uid=member['id']) }}">{{ member['name'] }}</a> ({{ member['email'] }}){% else %}<span class="muted">สั่งแบบไม่ล็อกอิน (guest)</span>{% endif %}</p>
+    </section>
+
+    <section class="panel">
+      <h2>สลิปโอนเงิน</h2>
+      {% if order['slip'] %}
+        <a href="{{ url_for('slip_file', oid=order['id']) }}" target="_blank" rel="noopener">
+          <img class="slip-img" src="{{ url_for('slip_file', oid=order['id']) }}" alt="สลิปโอนเงินของออเดอร์นี้"></a>
+        <p class="muted small">เช็กว่ายอดตรงกับ {{ order['total']|baht }} และเงินเข้าบัญชีจริงในแอปธนาคารก่อนกดยืนยัน</p>
+      {% else %}
+        <p class="muted">ลูกค้ายังไม่ได้แนบสลิป</p>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <h2>จัดการสถานะ</h2>
+      {% if order['status'] == 'shipped' %}
+        <form method="post" action="{{ url_for('admin.order_status', oid=order['id']) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label for="tracking">เลขพัสดุ</label>
+          <input id="tracking" name="tracking" value="{{ order['tracking'] }}" maxlength="60">
+          <button class="btn btn-small" type="submit">บันทึกเลขพัสดุ</button>
+        </form>
+      {% elif order['status'] == 'cancelled' %}
+        <p class="muted">ออเดอร์นี้ถูกยกเลิกแล้ว สินค้าถูกคืนเข้าสต็อกเรียบร้อย</p>
+      {% endif %}
+
+      {% for s in next_statuses %}
+      <form class="status-form" method="post" action="{{ url_for('admin.order_status', oid=order['id']) }}"
+            {% if s == 'cancelled' %}onsubmit="return confirm('ยกเลิกออเดอร์นี้และคืนสินค้าเข้าสต็อก?');"{% endif %}>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="status" value="{{ s }}">
+        {% if s == 'shipped' %}
+          <label for="tracking-new">เลขพัสดุ (ถ้ามี)</label>
+          <input id="tracking-new" name="tracking" maxlength="60" placeholder="เช่น TH0123456789">
+        {% endif %}
+        <button class="btn {{ 'btn-danger' if s == 'cancelled' else 'btn-small' }}" type="submit">
+          {% if s == 'paid' %}ยืนยันว่าได้รับเงินแล้ว{% elif s == 'shipped' %}บันทึกว่าจัดส่งแล้ว{% else %}ยกเลิกออเดอร์{% endif %}
+        </button>
+      </form>
+      {% endfor %}
+      {% if not next_statuses and order['status'] == 'shipped' %}<p class="muted small">จัดส่งแล้ว เปลี่ยนสถานะต่อไม่ได้</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

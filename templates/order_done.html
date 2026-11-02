@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}สั่งซื้อสำเร็จ · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="page narrow">
+  <h1>{{ 'สั่งซื้อสำเร็จ ' if new else 'ออเดอร์ ' }}เลขที่ #{{ '%05d' % order['id'] }}</h1>
+  <p class="muted small">สั่งเมื่อ {{ order['local_time'] }}{% if user %} · <a href="{{ url_for('customers.my_orders') }}">ดูออเดอร์ทั้งหมดของฉัน</a>{% endif %}</p>
+  <p>สถานะ: <span class="pill {{ order['status'] }}">{{ order['status']|status_label }}</span></p>
+
+  {% if order['status'] == 'pending' %}
+  <div class="pay-card">
+    <h2>ชำระเงินด้วย QR</h2>
+    <p class="pay-amount"><span>ยอดที่ต้องโอน</span><strong>{{ order['total']|baht }}</strong></p>
+    <p class="approve-note" role="note"><span aria-hidden="true">⏱</span><span>โอนและแนบสลิปแล้ว <b>แอดมินจะตรวจสอบและอนุมัติภายใน {{ approve_minutes }} นาที</b>{% if shop['hours'] %} (เวลาทำการ {{ shop['hours'] }}){% endif %} — เมื่ออนุมัติแล้วสถานะจะเปลี่ยนเป็น “ชำระเงินแล้ว” และระบบส่งอีเมลแจ้ง (ถ้าระบุอีเมลไว้)</span></p>
+    {% if payment_qr %}
+      <ol class="pay-steps">
+        <li>เปิดแอปธนาคารแล้วสแกน QR ด้านล่าง (รับเงินได้จากทุกธนาคาร)</li>
+        <li>กรอกยอด <strong>{{ order['total']|baht }}</strong> ให้ตรงกับออเดอร์ — QR นี้ไม่ได้ใส่ยอดมาให้อัตโนมัติ</li>
+        <li>โอนเสร็จแล้วบันทึกสลิป แล้วแนบส่งให้ร้านที่ช่องด้านล่าง (แอดมินอนุมัติภายใน {{ approve_minutes }} นาที)</li>
+      </ol>
+      <img class="pay-qr" src="{{ payment_qr }}" alt="QR สำหรับโอนเงินให้ร้าน">
+      <a class="pay-save" href="{{ payment_qr }}" download="payment-qr">บันทึกรูป QR ไว้สแกนจากแอปธนาคาร</a>
+    {% else %}
+      <p class="note">ร้านจะติดต่อกลับทางเบอร์ {{ order['phone'] }} เพื่อแจ้งช่องทางชำระเงิน</p>
+    {% endif %}
+
+    <form class="slip-form" action="{{ url_for('upload_slip', oid=order['id']) }}" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3>แนบสลิปโอนเงิน</h3>
+      {% if order['slip'] %}
+        <p class="slip-ok">ส่งสลิปแล้ว รอแอดมินอนุมัติภายใน {{ approve_minutes }} นาที — ส่งใหม่ได้ถ้าแนบผิดไฟล์</p>
+        <a href="{{ url_for('slip_file', oid=order['id']) }}" target="_blank" rel="noopener"><img class="slip-thumb" src="{{ url_for('slip_file', oid=order['id']) }}" alt="สลิปที่ส่งแล้ว"></a>
+      {% endif %}
+      <label class="sr" for="slip">ไฟล์สลิป</label>
+      <input id="slip" name="slip" type="file" accept="image/jpeg,image/png,image/webp" required>
+      <button class="btn btn-primary" type="submit">{{ 'ส่งสลิปใหม่' if order['slip'] else 'ส่งสลิป' }}</button>
+    </form>
+    <p class="muted small">เก็บหน้านี้ไว้ได้ ถ้าปิดแล้วต้องการแนบสลิปทีหลัง ให้ทักร้านพร้อมเลขที่ออเดอร์</p>
+  </div>
+  {% endif %}
+
+  {% if order['tracking'] %}<p>เลขพัสดุ: <strong>{{ order['tracking'] }}</strong></p>{% endif %}
+  <p>จัดส่งไปที่ {{ order['customer'] }} — {{ order['address'] }}</p>
+  <ul class="summary-list">
+    {% for l in lines %}
+    <li><span><a href="{{ url_for('product', pid=l['id']) }}">{{ l['name'] }}</a> × {{ l['qty'] }}</span><span>{{ (l['qty'] * l['unit_price'])|baht }}</span></li>
+    {% endfor %}
+    {% if order['discount'] %}<li><span>ส่วนลด{% if order['coupon'] %} ({{ order['coupon'] }}){% endif %}</span><span>−{{ order['discount']|baht }}</span></li>{% endif %}
+    <li><span>ค่าจัดส่ง</span><span>{{ order['shipping']|baht if order['shipping'] else 'ฟรี' }}</span></li>
+    {% if order['vat'] %}<li><span>VAT 7%</span><span>{{ order['vat']|baht }}</span></li>{% endif %}
+  </ul>
+  <p class="sum-total"><span>ยอดชำระ</span><strong>{{ order['total']|baht }}</strong></p>
+  <p class="muted small">มีคำถามเกี่ยวกับออเดอร์นี้? ติดต่อร้านที่ <a href="mailto:{{ shop['email'] }}?subject=ออเดอร์ %23{{ '%05d' % order['id'] }}">{{ shop['email'] }}</a>{% if shop['phone'] %} หรือโทร {{ shop['phone'] }}{% endif %}</p>
+  <div class="btn-row">
+    <a class="btn btn-primary" href="{{ url_for('index') }}">กลับไปเลือกชมต่อ</a>
+    {% if order['status'] != 'cancelled' %}<a class="btn btn-ghost" href="{{ url_for('receipt', oid=order['id']) }}" target="_blank" rel="noopener">🖨 {{ 'พิมพ์ใบเสร็จ' if order['status'] in ('paid','shipped') else 'พิมพ์ใบสั่งซื้อ' }}</a>{% endif %}
+    {% if order['status'] == 'pending' %}
+    <form method="post" action="{{ url_for('customers.order_cancel', oid=order['id']) }}" onsubmit="return confirm('ยกเลิกออเดอร์นี้? สินค้าจะถูกคืนเข้าสต็อก');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-ghost" type="submit">ยกเลิกออเดอร์</button>
+    </form>
+    {% endif %}
+    {% if order['status'] in ('paid', 'shipped') and user %}<span class="muted small">รีวิวสินค้าได้ที่หน้าสินค้าแต่ละชิ้น</span>{% endif %}
+  </div>
+</section>
+{% endblock %}

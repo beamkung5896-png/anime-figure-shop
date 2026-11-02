@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf" content="{{ csrf_token() }}">
+  <title>{% block title %}Anime Figure Shop{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% if chat_enabled %}<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">{% endif %}
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('index') }}">Anime Figure Shop</a>
+    <form class="search" action="{{ url_for('index') }}" method="get" role="search">
+      <input type="search" name="q" value="{{ request.args.get('q', '') }}" placeholder="ค้นหาชื่อตัวละคร" aria-label="ค้นหาสินค้า">
+      <button type="submit">ค้นหา</button>
+    </form>
+    <a class="acct-link wish-link" href="{{ url_for('index', wish=1) }}#shop" title="รายการโปรดของฉัน">♥ รายการโปรด{% if wished %} <span class="badge">{{ wished|length }}</span>{% endif %}</a>
+    {% if user %}
+    <a class="acct-link" href="{{ url_for('customers.account') }}" title="บัญชีของฉัน">👤 {{ user['name']|truncate(14, True, '…') }}</a>
+    {% else %}
+    <a class="acct-link" href="{{ url_for('customers.login') }}">เข้าสู่ระบบ</a>
+    <a class="acct-link acct-reg" href="{{ url_for('customers.register') }}">สมัครสมาชิก</a>
+    {% endif %}
+    <a class="cart-link" href="{{ url_for('cart') }}">ตะกร้า
+      <span class="badge" id="cart-badge" {% if cart_count == 0 %}hidden{% endif %}>{{ cart_count }}</span>
+    </a>
+  </header>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}<div class="flash" role="status">{{ messages[0] }}</div>{% endif %}
+  {% endwith %}
+
+  <main>{% block content %}{% endblock %}</main>
+
+  <footer class="site-footer">
+    <p class="foot-contact">ติดต่อร้าน:
+      {% if shop['email'] %}<a href="mailto:{{ shop['email'] }}">{{ shop['email'] }}</a>{% endif %}
+      {% if shop['phone'] %} · โทร {{ shop['phone'] }}{% endif %}
+      {% if shop['line'] %} · LINE {{ shop['line'] }}{% endif %}
+      · <a href="{{ url_for('contact') }}">หน้าติดต่อเรา</a>
+      · <a href="{{ url_for('privacy') }}">นโยบายความเป็นส่วนตัว</a></p>
+    <p>Anime Figure Shop</p>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  {% block chat_widget %}{% if chat_enabled %}{% include "_chat.html" %}{% endif %}{% endblock %}
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% if chat_enabled %}<script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>{% endif %}
+</body>
+</html>

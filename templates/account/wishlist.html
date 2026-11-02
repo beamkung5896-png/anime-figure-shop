@@ -1,0 +1,28 @@
+{% extends "account/layout.html" %}
+{% block acct %}
+<h1>รายการโปรด</h1>
+{% if products %}
+<div class="grid small-grid">
+  {% for p in products %}
+  <article class="case">
+    <a class="case-glass" href="{{ url_for('product', pid=p['id']) }}" style="--bg: {{ p['bg'] }}; --fit: {{ p['fit'] }}">
+      <img src="{{ url_for('static', filename='images/' ~ p['image'] ~ '.' ~ p['image_ext']) }}" alt="{{ p['name'] }}" loading="lazy">
+      {% if p['stock'] <= 0 %}<span class="tag tag-out">สินค้าหมด</span>{% endif %}
+    </a>
+    <div class="case-body">
+      <h2><a href="{{ url_for('product', pid=p['id']) }}">{{ p['name'] }}</a></h2>
+      <div class="buy-row">
+        <span class="price">{{ p['price']|baht }}</span>
+        <button class="btn btn-small js-add" data-id="{{ p['id'] }}" {% if p['stock'] <= 0 %}disabled{% endif %}>{{ 'หมดแล้ว' if p['stock'] <= 0 else 'ใส่ตะกร้า' }}</button>
+      </div>
+      <form class="wish-remove" method="post" action="{{ url_for('customers.wishlist_toggle', pid=p['id']) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ url_for('customers.wishlist') }}">
+        <button class="link-btn" type="submit">เอาออกจากรายการโปรด</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}<p class="empty">ยังไม่มีสินค้าที่ถูกใจ กดหัวใจ ♡ ที่หน้าสินค้าเพื่อเก็บไว้ดูทีหลัง</p>{% endif %}
+{% endblock %}

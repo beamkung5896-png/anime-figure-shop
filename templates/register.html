@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}สมัครสมาชิก · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="page narrow">
+  <form class="auth-card form" method="post" novalidate>
+    <h1>สมัครสมาชิก</h1>
+    <p class="muted">สมาชิกเก็บที่อยู่จัดส่ง ดูประวัติ/สถานะออเดอร์ บันทึกรายการโปรด รีวิวสินค้า และใช้คูปองได้</p>
+    {% if errors %}<ul class="errors" role="alert">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="name">ชื่อ-นามสกุล</label>
+    <input id="name" name="name" value="{{ form.get('name', '') }}" autocomplete="name" maxlength="80" required>
+    <label for="email">อีเมล (ใช้เข้าสู่ระบบ)</label>
+    <input id="email" name="email" type="email" value="{{ form.get('email', '') }}" autocomplete="email" required>
+    <label for="phone">เบอร์โทร (ไม่บังคับ 10 หลัก)</label>
+    <input id="phone" name="phone" inputmode="numeric" maxlength="10" value="{{ form.get('phone', '') }}" autocomplete="tel">
+    <label for="password">รหัสผ่าน (อย่างน้อย 8 ตัว ผสมตัวอักษรและตัวเลข)</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" required>
+    <label for="again">ยืนยันรหัสผ่าน</label>
+    <input id="again" name="again" type="password" autocomplete="new-password" required>
+    <label class="check consent"><input type="checkbox" name="accept" value="1" {% if form.get('accept') %}checked{% endif %}>
+      <span>ฉันได้อ่านและยอมรับ<a href="{{ url_for('privacy', **{'from': 'register'}) }}#register-consent" target="_blank" rel="noopener">ข้อตกลงการใช้งานและนโยบายความเป็นส่วนตัว (PDPA)</a> และยินยอมให้ร้านเก็บ ใช้ ข้อมูลส่วนบุคคลของฉันตามรายละเอียดด้านล่าง</span></label>
+    <details class="consent-details">
+      <summary>ดูรายละเอียดการยินยอม</summary>
+      <dl>
+        <dt>ผู้ควบคุมข้อมูล</dt>
+        <dd>{{ shop_name_text or 'ร้าน' }}{% if shop['email'] %} · อีเมล {{ shop['email'] }}{% endif %}{% if shop['phone'] %} · โทร {{ shop['phone'] }}{% endif %}{% if shop['line'] %} · LINE {{ shop['line'] }}{% endif %}</dd>
+        <dt>ข้อมูลที่เก็บ</dt>
+        <dd>ชื่อ-นามสกุล อีเมล เบอร์โทร (ถ้ากรอก) รหัสผ่าน (เก็บแบบเข้ารหัส ร้านอ่านรหัสผ่านจริงของท่านไม่ได้) ที่อยู่จัดส่งที่บันทึกไว้ ตะกร้า รายการโปรด ประวัติและสถานะออเดอร์ รีวิวที่เขียน (แสดงชื่อต้นต่อสาธารณะ) และเวลาที่ท่านกดยินยอม</dd>
+        <dt>ใช้เพื่อ</dt>
+        <dd>สร้างและดูแลบัญชีสมาชิก ดำเนินการสั่งซื้อ ตรวจสอบการชำระเงิน จัดส่งสินค้า ติดต่อเรื่องออเดอร์ ออกใบเสร็จตามกฎหมายบัญชีและภาษี และรักษาความปลอดภัยของบัญชี — ร้านไม่ขายข้อมูล และไม่ส่งข่าวสารการตลาดหากท่านไม่ได้ยินยอมแยกต่างหาก</dd>
+        <dt>เปิดเผยให้ใคร</dt>
+        <dd>ผู้ให้บริการขนส่ง (ชื่อ เบอร์โทร ที่อยู่) เท่าที่จำเป็นต่อการจัดส่ง และหน่วยงานรัฐเมื่อกฎหมายกำหนด</dd>
+        <dt>เก็บนานแค่ไหน</dt>
+        <dd>ตลอดที่ท่านยังเป็นสมาชิก หากลบบัญชี ข้อมูลส่วนตัวในบัญชีจะถูกลบ ยกเว้นข้อมูลออเดอร์ที่ต้องเก็บตามกฎหมาย</dd>
+        <dt>สิทธิของท่าน</dt>
+        <dd>ขอเข้าถึง/สำเนา แก้ไข ลบ ระงับการใช้ หรือคัดค้านการใช้ข้อมูล และ<strong>ถอนความยินยอมได้ทุกเมื่อ</strong> (แก้ไขข้อมูลหรือลบบัญชีเองได้ที่ “บัญชีของฉัน” หรือติดต่อร้าน) การถอนไม่กระทบการใช้ข้อมูลที่ทำไปแล้ว และร้องเรียนต่อคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลได้</dd>
+        <dt>หากไม่ยินยอม</dt>
+        <dd>ท่านจะไม่สามารถสมัครสมาชิกได้ แต่ยังเลือกดูสินค้าได้ตามปกติ</dd>
+      </dl>
+      <p class="small"><a href="{{ url_for('privacy', **{'from': 'register'}) }}#register-consent" target="_blank" rel="noopener">อ่านนโยบายฉบับเต็ม</a></p>
+    </details>
+    <button class="btn btn-primary" type="submit">สมัครสมาชิก</button>
+    <p class="auth-links"><span>เป็นสมาชิกอยู่แล้ว? <a href="{{ url_for('customers.login', next=request.args.get('next')) }}">เข้าสู่ระบบ</a></span></p>
+  </form>
+</section>
+{% endblock %}

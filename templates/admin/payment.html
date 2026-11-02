@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block title %}ช่องทางชำระเงิน{% endblock %}
+{% block content %}
+<h1>ช่องทางชำระเงิน</h1>
+{% if error %}<ul class="errors" role="alert"><li>{{ error }}</li></ul>{% endif %}
+<div class="cols">
+  <section class="panel">
+    <h2>QR รับเงินที่ลูกค้าเห็น</h2>
+    {% if qr_file %}
+      <img class="qr-admin" src="{{ url_for('static', filename='payment/' ~ qr_file) }}?v={{ range(1, 10**6) | random }}" alt="QR รับเงินปัจจุบัน">
+    {% else %}
+      <p class="muted">ยังไม่ได้ตั้งค่า QR ลูกค้าจะเห็นข้อความให้รอร้านติดต่อกลับแทน</p>
+    {% endif %}
+  </section>
+  <section class="panel">
+    <h2>เปลี่ยนรูป QR</h2>
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="qr">ไฟล์รูป QR (JPG / PNG / WEBP)</label>
+      <input id="qr" name="qr" type="file" accept="image/jpeg,image/png,image/webp" required>
+      <button class="btn" type="submit" style="margin-top:16px">อัปโหลด</button>
+    </form>
+    <p class="muted small">ใช้ QR แบบ “รับเงินจากทุกธนาคาร” ที่ไม่ผูกยอด ลูกค้าจะกรอกยอดเองตามที่หน้าสั่งซื้อบอกไว้ ทดสอบสแกนด้วยแอปธนาคารของคุณทุกครั้งหลังเปลี่ยนรูป</p>
+    <p class="muted small">สลิปของลูกค้าเก็บในโฟลเดอร์ <code>slips/</code> ซึ่งไม่เปิดเป็นไฟล์สาธารณะ ดูได้เฉพาะแอดมินและเจ้าของออเดอร์</p>
+  </section>
+</div>
+{% endblock %}

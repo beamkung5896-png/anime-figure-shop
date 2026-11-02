@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+{% if featured and not q and cat == 'ทั้งหมด' and not wish %}
+<section class="hero">
+  <div class="hero-text">
+    <h1>ฟิกเกอร์ที่ใช่<br>วางบนชั้นของคุณ</h1>
+    <p>ฟิกเกอร์โมเดลอนิเมะ {{ products|length }} แบบ ส่งทั่วไทย ทุกชิ้นมีกล่องและฐานตั้งโชว์</p>
+    <a class="btn btn-primary" href="{{ url_for('product', pid=featured['id']) }}">ดู {{ featured['name'] }}</a>
+  </div>
+  <div class="hero-stage">
+    <div class="spot"></div>
+    <img src="{{ url_for('static', filename='images/' ~ featured['image'] ~ '.' ~ featured['image_ext']) }}" alt="{{ featured['name'] }}">
+    <div class="pedestal"></div>
+  </div>
+</section>
+{% endif %}
+
+<section class="shelf" id="shop">
+  <nav class="chips" aria-label="หมวดสินค้า">
+    {% for c in categories %}
+      <a class="chip {% if c == cat and not wish %}active{% endif %}" href="{{ url_for('index', cat=c, q=q or None) }}#shop">{{ c }}</a>
+    {% endfor %}
+    <a class="chip chip-wish {% if wish %}active{% endif %}" href="{{ url_for('index', wish=1) }}#shop">♥ รายการโปรดของฉัน{% if wished %} ({{ wished|length }}){% endif %}</a>
+  </nav>
+
+  {% if products %}
+  <div class="grid">
+    {% for p in products %}
+    <article class="case">
+      <a class="case-glass" href="{{ url_for('product', pid=p['id']) }}" style="--bg: {{ p['bg'] }}; --fit: {{ p['fit'] }}">
+        <img src="{{ url_for('static', filename='images/' ~ p['image'] ~ '.' ~ p['image_ext']) }}" alt="{{ p['name'] }}" loading="lazy">
+        {% if p['id'] in hot and p['stock'] > 0 %}<span class="tag tag-hot">🔥 ขายดี</span>{% endif %}
+        {% if p['stock'] <= 0 %}<span class="tag tag-out">สินค้าหมด</span>
+        {% elif p['stock'] <= 3 %}<span class="tag tag-low">เหลือ {{ p['stock'] }} ชิ้น</span>{% endif %}
+      </a>
+      <form class="heart" method="post" action="{{ url_for('customers.wishlist_toggle', pid=p['id']) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+        <button type="submit" aria-label="{{ 'เอาออกจากรายการโปรด' if p['id'] in wished else 'เพิ่มในรายการโปรด' }}" class="{{ 'on' if p['id'] in wished }}">{{ '♥' if p['id'] in wished else '♡' }}</button>
+      </form>
+      <div class="case-body">
+        <h2><a href="{{ url_for('product', pid=p['id']) }}">{{ p['name'] }}</a></h2>
+        <p class="meta">{{ p['scale']|scale_label }} · {{ p['category'] }}{% if p['review_count'] %} · <span class="stars">★</span> {{ p['avg_rating'] }} ({{ p['review_count'] }}){% endif %}</p>
+        <div class="buy-row">
+          <span class="price">{{ p['price']|baht }}</span>
+          <button class="btn btn-small js-add" data-id="{{ p['id'] }}" {% if p['stock'] <= 0 %}disabled{% endif %}>{{ 'หมดแล้ว' if p['stock'] <= 0 else 'ใส่ตะกร้า' }}</button>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">{% if wish %}ยังไม่มีสินค้าในรายการโปรด กดหัวใจ ♡ ที่การ์ดสินค้าเพื่อเก็บไว้ดูทีหลัง · <a href="{{ url_for('index') }}#shop">กลับไปเลือกสินค้า</a>{% else %}ไม่พบสินค้าที่ตรงกับ “{{ q }}” ลองเปลี่ยนคำค้นหรือเลือก <a href="{{ url_for('index') }}">ทั้งหมด</a>{% endif %}</p>
+  {% endif %}
+</section>
+{% endblock %}

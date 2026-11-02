@@ -1,0 +1,14 @@
+# ไฟล์ลับ / ข้อมูลส่วนตัว — ห้ามอัพขึ้น Git
+.env
+secret.key
+shop.db
+slips/*
+!slips/.gitkeep
+static/payment/qr.*
+static/images/p_*
+
+# ไฟล์ที่ Python สร้างเอง
+__pycache__/
+*.pyc
+.venv/
+venv/

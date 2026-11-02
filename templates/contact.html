@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}ติดต่อเรา · Anime Figure Shop{% endblock %}
+{# หน้านี้ฝังแชทไว้ในหน้า จึงไม่ต้องมีปุ่มลอยซ้ำ #}
+{% block chat_widget %}{% endblock %}
+{% block content %}
+<section class="page contact-page">
+  <h1>ติดต่อเรา</h1>
+  <div class="contact-grid {{ '' if chat_enabled else 'no-chat' }}">
+    <div class="auth-card form contact-info">
+      <h2>ช่องทางติดต่อร้าน</h2>
+      <p>มีคำถามเรื่องสินค้า การชำระเงิน หรือการจัดส่ง ติดต่อร้านได้ตามช่องทางนี้ (กรุณาแจ้งเลขที่ออเดอร์ด้วยเพื่อให้ตรวจสอบได้เร็ว)</p>
+      <ul class="summary-list">
+        {% if shop['email'] %}<li><span>อีเมล</span><span><a href="mailto:{{ shop['email'] }}">{{ shop['email'] }}</a></span></li>{% endif %}
+        {% if shop['phone'] %}<li><span>โทรศัพท์</span><span><a href="tel:{{ shop['phone'] }}">{{ shop['phone'] }}</a></span></li>{% endif %}
+        {% if shop['line'] %}<li><span>LINE</span><span>{{ shop['line'] }}</span></li>{% endif %}
+        {% if shop['hours'] %}<li><span>เวลาทำการ</span><span>{{ shop['hours'] }}</span></li>{% endif %}
+      </ul>
+      {% if chat_enabled %}<p class="muted small">💬 อยากได้คำตอบทันที ถามผู้ช่วยแชทที่กล่องด้านข้างได้เลย ถ้าผู้ช่วยตอบไม่ได้ พิมพ์ขอคุยกับแอดมินได้เลย แอดมินจะเข้ามาตอบต่อให้</p>{% endif %}
+    </div>
+    {% if chat_enabled %}{% set chat_inline = true %}{% include "_chat.html" %}{% endif %}
+  </div>
+</section>
+{% endblock %}

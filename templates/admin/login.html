@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>เข้าสู่ระบบหลังบ้าน · Anime Figure Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="adm login-page">
+  <form class="login-card" method="post">
+    <h1>Anime Figure Shop</h1>
+    <p class="muted">เข้าสู่ระบบสำหรับเจ้าของร้าน</p>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="username">ชื่อผู้ใช้</label>
+    <input id="username" name="username" autocomplete="username" autofocus required>
+    <label for="password">รหัสผ่าน</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="btn" type="submit">เข้าสู่ระบบ</button>
+    <a class="muted back" href="{{ url_for('index') }}">กลับหน้าร้าน</a>
+  </form>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% block title %}สินค้า{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>สินค้า</h1>
+  <a class="btn" href="{{ url_for('admin.product_form') }}">เพิ่มสินค้า</a>
+</div>
+<div class="panel flush">
+<div class="table-wrap">
+<table>
+  <thead><tr><th></th><th>ชื่อ</th><th>หมวด</th><th class="num">ราคา</th><th class="num">สต็อก</th><th class="num">ขายแล้ว</th><th>หน้าร้าน</th><th></th></tr></thead>
+  <tbody>
+  {% for p in products %}
+    <tr class="{{ 'dim' if not p['active'] }}">
+      <td><img class="thumb" src="{{ url_for('static', filename='images/' ~ p['image'] ~ '.' ~ p['image_ext']) }}" alt="" style="background: {{ p['bg'] }}"></td>
+      <td><a href="{{ url_for('admin.product_form', pid=p['id']) }}"><strong>{{ p['name'] }}</strong></a><br><span class="muted small">{{ p['scale']|scale_label }}</span></td>
+      <td>{{ p['category'] }}</td>
+      <td class="num">{{ p['price']|baht }}</td>
+      <td class="num">
+        {% if p['stock'] == 0 %}<span class="pill cancelled">หมด</span>
+        {% elif p['stock'] <= low %}<span class="pill pending">{{ p['stock'] }}</span>
+        {% else %}{{ p['stock'] }}{% endif %}
+      </td>
+      <td class="num">{{ p['sold'] }}</td>
+      <td>{% if p['active'] %}<span class="pill paid">แสดง</span>{% else %}<span class="pill cancelled">ซ่อน</span>{% endif %}</td>
+      <td class="actions">
+        <a href="{{ url_for('admin.product_form', pid=p['id']) }}">แก้ไข</a>
+        <form method="post" action="{{ url_for('admin.product_toggle', pid=p['id']) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="linkish" type="submit">{{ 'ซ่อน' if p['active'] else 'แสดง' }}</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.product_delete', pid=p['id']) }}" onsubmit="return confirm('ลบ “{{ p['name']|replace("'", '') }}” ถาวร?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="linkish danger" type="submit">ลบ</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="muted">ยังไม่มีสินค้า กด “เพิ่มสินค้า” เพื่อเริ่มต้น</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+</div>
+<p class="muted small">“ซ่อน” = ไม่แสดงในหน้าร้านแต่ข้อมูลยังอยู่ · “ลบ” ใช้ได้เฉพาะสินค้าที่ยังไม่เคยถูกสั่งซื้อ</p>
+{% endblock %}

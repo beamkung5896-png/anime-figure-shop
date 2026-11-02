@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block title %}แชท {{ t['name'] or 'ผู้เยี่ยมชม' }}{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>{{ t['name'] or 'ผู้เยี่ยมชม #%d' % t['id'] }}
+    <span class="pill {{ 'cancelled' if t['status'] == 'closed' else ('shipped' if t['status'] == 'human' else 'paid') }}" id="mode-pill">{{ {'ai': 'AI ตอบ', 'human': 'แอดมินดูแล', 'closed': 'ปิดแล้ว'}[t['status']] }}</span></h1>
+  <a href="{{ url_for('admin.chats') }}">กลับรายการแชท</a>
+</div>
+<p class="muted small">{% if member %}สมาชิก: <a href="{{ url_for('admin.customer_detail', uid=member['id']) }}">{{ member['name'] }}</a> ({{ member['email'] }}){% else %}ผู้เยี่ยมชมที่ยังไม่ล็อกอิน{% endif %} · เริ่มคุย {{ t['local_time'] }}</p>
+
+<section class="panel chat-admin" data-tid="{{ t['id'] }}" data-poll="{{ url_for('admin.chat_messages', tid=t['id']) }}" data-reply="{{ url_for('admin.chat_reply', tid=t['id']) }}">
+  <div class="cl-body" id="cl-body" aria-live="polite">
+    {% for m in msgs %}
+    <div class="cl-msg {{ m['role'] }}" data-id="{{ m['id'] }}"><span class="who">{{ {'customer': 'ลูกค้า', 'ai': '🤖 AI', 'admin': '👤 แอดมิน'}[m['role']] }} · {{ m['t'] }}</span><div class="bubble">{{ m['body'] }}</div></div>
+    {% endfor %}
+  </div>
+  <form id="cl-form" class="cl-form" method="post" action="{{ url_for('admin.chat_reply', tid=t['id']) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <textarea name="message" id="cl-input" rows="2" maxlength="1000" placeholder="พิมพ์ตอบลูกค้า… (Enter ส่ง, Shift+Enter ขึ้นบรรทัดใหม่) — เมื่อส่งแล้ว AI จะหยุดตอบห้องนี้" required></textarea>
+    <button class="btn" type="submit">ส่ง</button>
+  </form>
+  <div class="cl-actions">
+    {% for mode, label in (('ai', 'ให้ AI ตอบต่อ'), ('human', 'แอดมินตอบเอง (หยุด AI)'), ('closed', 'ปิดแชท')) %}{% if mode != t['status'] %}
+    <form method="post" action="{{ url_for('admin.chat_mode', tid=t['id']) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="mode" value="{{ mode }}">
+      <button class="btn btn-ghost btn-small" type="submit">{{ label }}</button>
+    </form>{% endif %}{% endfor %}
+    <form method="post" action="{{ url_for('admin.chat_delete', tid=t['id']) }}" onsubmit="return confirm('ลบประวัติแชทนี้ถาวร?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-danger btn-small" type="submit">ลบประวัติ</button>
+    </form>
+  </div>
+</section>
+<script src="{{ url_for('static', filename='js/chat_admin.js') }}"></script>
+{% endblock %}

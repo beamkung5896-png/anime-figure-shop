@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{ 'ใบเสร็จรับเงิน' if order['status'] in ('paid','shipped') else 'ใบสั่งซื้อ' }} #{{ '%05d' % order['id'] }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/receipt.css') }}">
+  <style>@page { size: {{ '80mm auto' if size == 'slip' else 'A4' }}; margin: {{ '3mm' if size == 'slip' else '14mm' }}; }</style>
+</head>
+<body class="{{ size }}">
+  <div class="toolbar no-print">
+    <button type="button" onclick="window.print()">🖨 พิมพ์</button>
+    <a class="{{ 'on' if size == 'a4' }}" href="{{ url_for('receipt', oid=order['id'], size='a4') }}">ขนาด A4</a>
+    <a class="{{ 'on' if size == 'slip' }}" href="{{ url_for('receipt', oid=order['id'], size='slip') }}">สลิป 80 มม.</a>
+    <a href="{{ url_for('admin.order_detail', oid=order['id']) if is_admin else url_for('order_done', oid=order['id']) }}">← กลับ</a>
+  </div>
+
+  <main class="receipt">
+    {% if order['status'] == 'cancelled' %}<div class="stamp">ยกเลิก</div>{% endif %}
+    <header class="r-head">
+      <h1>{{ info['shop_name'] }}</h1>
+      {% if info['shop_address'] %}<p class="pre">{{ info['shop_address'] }}</p>{% endif %}
+      {% if shop['phone'] %}<p>โทร {{ shop['phone'] }}</p>{% endif %}
+      {% if shop['email'] %}<p>{{ shop['email'] }}</p>{% endif %}
+      {% if shop['line'] %}<p>LINE: {{ shop['line'] }}</p>{% endif %}
+      {% if info['shop_tax_id'] %}<p>เลขประจำตัวผู้เสียภาษี {{ info['shop_tax_id'] }}</p>{% endif %}
+    </header>
+
+    <h2 class="r-title">{% if order['status'] in ('paid','shipped') %}ใบเสร็จรับเงิน{% elif order['status'] == 'cancelled' %}ใบสั่งซื้อ (ยกเลิกแล้ว){% else %}ใบสั่งซื้อ (ยังไม่ชำระเงิน){% endif %}</h2>
+
+    <dl class="r-meta">
+      <div><dt>เลขที่</dt><dd>#{{ '%05d' % order['id'] }}</dd></div>
+      <div><dt>วันที่สั่ง</dt><dd>{{ order['local_time'] }}</dd></div>
+      <div><dt>ลูกค้า</dt><dd>{{ order['customer'] }}</dd></div>
+      <div><dt>โทร</dt><dd>{{ order['phone'] }}</dd></div>
+      <div class="wide"><dt>ที่อยู่จัดส่ง</dt><dd class="pre">{{ order['address'] }}</dd></div>
+      {% if order['tracking'] %}<div class="wide"><dt>เลขพัสดุ</dt><dd>{{ order['tracking'] }}</dd></div>{% endif %}
+    </dl>
+
+    <table class="r-items">
+      <thead><tr><th>รายการ</th><th class="num">จำนวน</th><th class="num">ราคา</th><th class="num">รวม</th></tr></thead>
+      <tbody>
+      {% for l in lines %}
+        <tr><td class="name">{{ l['name'] }}</td><td class="num">{{ l['qty'] }}</td>
+            <td class="num">{{ l['unit_price']|baht }}</td><td class="num">{{ (l['qty'] * l['unit_price'])|baht }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <dl class="r-sum">
+      <div><dt>ยอดสินค้า</dt><dd>{{ subtotal|baht }}</dd></div>
+      {% if order['discount'] %}<div><dt>ส่วนลด{% if order['coupon'] %} ({{ order['coupon'] }}){% endif %}</dt><dd>−{{ order['discount']|baht }}</dd></div>{% endif %}
+      <div><dt>ค่าจัดส่ง</dt><dd>{{ order['shipping']|baht if order['shipping'] else 'ฟรี' }}</dd></div>
+      {% if order['vat'] %}<div><dt>VAT 7%</dt><dd>{{ order['vat']|baht }}</dd></div>{% endif %}
+      <div class="grand"><dt>ยอดสุทธิ</dt><dd>{{ order['total']|baht }}</dd></div>
+    </dl>
+
+    <p class="r-status">สถานะ: <strong>{{ order['status']|status_label }}</strong></p>
+    {% if info['receipt_footer'] %}<p class="r-foot">{{ info['receipt_footer'] }}</p>{% endif %}
+    <p class="r-printed">พิมพ์เมื่อ {{ printed }}</p>
+  </main>
+
+  {% if auto %}<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script>{% endif %}
+</body>
+</html>

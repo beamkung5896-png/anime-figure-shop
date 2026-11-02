@@ -1,0 +1,21 @@
+{% extends "account/layout.html" %}
+{% block acct %}
+<h1>สวัสดี คุณ{{ user['name'] }}</h1>
+<div class="acct-stats">
+  <div><span>ออเดอร์ทั้งหมด</span><strong>{{ stats['n'] }}</strong></div>
+  <div><span>ยอดซื้อสะสม (ชำระแล้ว)</span><strong>{{ stats['spent']|baht }}</strong></div>
+  <div><span>รายการโปรด</span><strong>{{ wish }}</strong></div>
+</div>
+<h2>ออเดอร์ล่าสุด <a class="more" href="{{ url_for('customers.my_orders') }}">ดูทั้งหมด</a></h2>
+{% if recent %}
+<ul class="summary-list order-list">
+  {% for o in recent %}
+  <li><a href="{{ url_for('order_done', oid=o['id']) }}">#{{ '%05d' % o['id'] }}</a>
+    <span class="pill {{ o['status'] }}">{{ o['status']|status_label }}</span><span>{{ o['total']|baht }}</span></li>
+  {% endfor %}
+</ul>
+{% else %}<p class="muted">ยังไม่มีออเดอร์ <a href="{{ url_for('index') }}">เริ่มเลือกฟิกเกอร์</a></p>{% endif %}
+<h2>ที่อยู่หลัก <a class="more" href="{{ url_for('customers.addresses') }}">จัดการที่อยู่</a></h2>
+{% if addr %}<p><strong>{{ addr['recipient'] }}</strong> · {{ addr['phone'] }}<br>{{ addr['address'] }}</p>
+{% else %}<p class="muted">ยังไม่ได้บันทึกที่อยู่ — บันทึกไว้แล้วสั่งซื้อครั้งต่อไปได้เร็วขึ้น</p>{% endif %}
+{% endblock %}

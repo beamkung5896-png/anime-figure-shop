@@ -1,0 +1,23 @@
+{% extends "account/layout.html" %}
+{% block acct %}
+<h1>ออเดอร์ของฉัน</h1>
+{% if orders %}
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th>เลขที่</th><th>วันเวลา</th><th>จำนวน</th><th class="num">ยอดรวม</th><th>สถานะ</th><th></th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+  <tr>
+    <td><a href="{{ url_for('order_done', oid=o['id']) }}"><strong>#{{ '%05d' % o['id'] }}</strong></a></td>
+    <td class="small">{{ o['local_time'] }}</td>
+    <td>{{ o['items'] }} ชิ้น</td>
+    <td class="num">{{ o['total']|baht }}</td>
+    <td><span class="pill {{ o['status'] }}">{{ o['status']|status_label }}</span>
+      {% if o['tracking'] %}<br><span class="small muted">พัสดุ {{ o['tracking'] }}</span>{% endif %}</td>
+    <td><a href="{{ url_for('order_done', oid=o['id']) }}">{{ 'ชำระเงิน' if o['status'] == 'pending' else 'รายละเอียด' }}</a>
+      {% if o['status'] != 'cancelled' %} · <a href="{{ url_for('receipt', oid=o['id']) }}" target="_blank" rel="noopener">ใบเสร็จ</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="empty">ยังไม่มีออเดอร์ <a href="{{ url_for('index') }}">ไปเลือกฟิกเกอร์</a></p>{% endif %}
+{% endblock %}

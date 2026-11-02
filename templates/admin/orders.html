@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% from "admin/_datefilter.html" import date_filter with context %}
+{% block title %}ออเดอร์{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>ออเดอร์</h1>
+  <a class="btn btn-ghost" href="{{ url_for('admin.orders_csv', status=status or None, q=q or None, d1=d1 or None, d2=d2 or None) }}">ส่งออก CSV</a>
+</div>
+
+{{ date_filter(d1, d2, {'status': status, 'q': q}) }}
+
+<nav class="tabs" aria-label="กรองตามสถานะ">
+  <a class="{{ 'on' if not status }}" href="{{ url_for('admin.orders', q=q or None, d1=d1 or None, d2=d2 or None) }}">ทั้งหมด <span>{{ total_all }}</span></a>
+  {% for key, label in {'pending': 'รอชำระเงิน', 'paid': 'ชำระแล้ว', 'shipped': 'จัดส่งแล้ว', 'cancelled': 'ยกเลิก'}.items() %}
+  <a class="{{ 'on' if status == key }}" href="{{ url_for('admin.orders', status=key, q=q or None, d1=d1 or None, d2=d2 or None) }}">{{ label }} <span>{{ counts.get(key, 0) }}</span></a>
+  {% endfor %}
+</nav>
+
+<form class="searchbar" method="get">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  {% if d1 %}<input type="hidden" name="d1" value="{{ d1 }}">{% endif %}{% if d2 %}<input type="hidden" name="d2" value="{{ d2 }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="ค้นหาชื่อ เบอร์โทร หรือเลขออเดอร์" aria-label="ค้นหาออเดอร์">
+  <button class="btn" type="submit">ค้นหา</button>
+</form>
+
+<p class="muted small summary">
+  {% if range_label %}ช่วงวันที่ <strong>{{ range_label }}</strong> · {% endif %}พบ <strong>{{ found }}</strong> ออเดอร์ · ยอดรวม (ไม่นับที่ยกเลิก) <strong>{{ money|baht }}</strong>{% if found > orders|length %} · แสดง {{ orders|length }} รายการล่าสุด ใช้ตัวกรองวันที่ให้แคบลงเพื่อดูที่เหลือ{% endif %}
+</p>
+<div class="panel flush"><div class="table-wrap">
+<table>
+  <thead><tr><th>เลขที่</th><th>วันเวลา</th><th>ลูกค้า</th><th>เบอร์โทร</th><th class="num">ยอดรวม</th><th>สถานะ</th><th></th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td><a href="{{ url_for('admin.order_detail', oid=o['id']) }}"><strong>#{{ '%05d' % o['id'] }}</strong></a></td>
+      <td class="small">{{ o['local_time'] }}</td>
+      <td>{{ o['customer'] }}</td>
+      <td>{{ o['phone'] }}</td>
+      <td class="num">{{ o['total']|baht }}</td>
+      <td><span class="pill {{ o['status'] }}">{{ o['status']|status_label }}</span>
+        {% if o['slip'] and o['status'] == 'pending' %}<span class="pill slip">มีสลิป</span>{% endif %}</td>
+      <td><a href="{{ url_for('receipt', oid=o['id'], print=1) }}" target="_blank" rel="noopener" title="พิมพ์ใบเสร็จ">🖨</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">ไม่พบออเดอร์</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+{% endblock %}

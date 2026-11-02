@@ -1,0 +1,15 @@
+{# ตัวเลือกช่วงวันที่ใช้ร่วมกันทุกหน้าหลังบ้าน — hidden = ตัวกรองอื่นที่ต้องคงไว้ตอนเปลี่ยนวันที่ #}
+{% macro date_filter(d1, d2, hidden={}) %}
+<form class="datebar" method="get" aria-label="เลือกช่วงวันที่">
+  {% for k, v in hidden.items() if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  <label>จากวันที่ <input type="date" name="d1" value="{{ d1 }}" max="{{ today_iso }}"></label>
+  <label>ถึงวันที่ <input type="date" name="d2" value="{{ d2 }}" max="{{ today_iso }}"></label>
+  <button class="btn btn-small" type="submit">ดู</button>
+  {% if d1 or d2 %}<a class="btn btn-ghost btn-small" href="{{ url_for(request.endpoint, **hidden) }}">ล้างวันที่</a>{% endif %}
+  <span class="presets">
+    {% for p in date_presets %}
+    <a class="{{ 'on' if d1 == p['d1'] and d2 == p['d2'] }}" href="{{ url_for(request.endpoint, **dict(hidden, d1=p['d1'], d2=p['d2'])) }}">{{ p['label'] }}</a>
+    {% endfor %}
+  </span>
+</form>
+{% endmacro %}

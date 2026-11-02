@@ -1,0 +1,92 @@
+{% extends "admin/base.html" %}
+{% block title %}รายงานยอดขาย{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>รายงานยอดขาย</h1>
+  <form class="report-filter" method="get">
+    <select name="period" aria-label="ดูแบบ" onchange="this.form.submit()">
+      <option value="month" {{ 'selected' if kind == 'month' }}>รายเดือน</option>
+      <option value="year" {{ 'selected' if kind == 'year' }}>รายปี</option>
+      <option value="range" {{ 'selected' if kind == 'range' }}>เลือกช่วงวันที่</option>
+    </select>
+    {% if kind == 'range' %}
+    <input type="date" name="d1" value="{{ d1 }}" max="{{ today_iso }}" aria-label="จากวันที่">
+    <span class="muted small">ถึง</span>
+    <input type="date" name="d2" value="{{ d2 }}" max="{{ today_iso }}" aria-label="ถึงวันที่">
+    <button class="btn btn-small" type="submit">ดู</button>
+    {% else %}
+    {% if kind == 'month' %}
+    <select name="m" aria-label="เดือน" onchange="this.form.submit()">
+      {% for n in range(12) %}<option value="{{ n + 1 }}" {{ 'selected' if start.month == n + 1 }}>{{ months[n] }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <select name="y" aria-label="ปี" onchange="this.form.submit()">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if start.year == y }}>{{ y + 543 }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <label class="check small"><input type="checkbox" name="pending" value="1" {{ 'checked' if pending }} onchange="this.form.submit()"> นับออเดอร์ที่รอชำระด้วย</label>
+    <noscript><button class="btn btn-small" type="submit">ดู</button></noscript>
+  </form>
+</div>
+{% if kind == 'range' %}<p class="presets-row">{% for p in date_presets %}<a href="{{ url_for('admin.reports', period='range', d1=p['d1'], d2=p['d2'], pending='1' if pending else None) }}" class="{{ 'on' if d1 == p['d1'] and d2 == p['d2'] }}">{{ p['label'] }}</a>{% endfor %}</p>{% endif %}
+<p class="muted small">ช่วง: <strong>{{ range_text ~ ' (' ~ n_days ~ ' วัน)' if kind == 'range' else ((month_name ~ ' ' ~ (start.year + 543)) if kind == 'month' else ('ปี ' ~ (start.year + 543))) }}</strong>
+  · นับเฉพาะออเดอร์ที่{{ 'สั่งแล้ว (รวมรอชำระ) ' if pending else 'ชำระเงินแล้ว/จัดส่งแล้ว ' }}ไม่นับที่ยกเลิก · เวลาไทย</p>
+
+<section class="stats">
+  <div class="stat"><span>ยอดขายรวม (รวมค่าส่ง)</span><strong>{{ cur['revenue']|baht }}</strong>
+    <small>{% if change is not none %}{{ '▲' if change >= 0 else '▼' }} {{ change|abs }}% เทียบ{{ prev_label }} ({{ prev['revenue']|baht }}){% else %}ช่วงก่อนหน้ายังไม่มียอดให้เทียบ{% endif %}</small></div>
+  <div class="stat"><span>จำนวนออเดอร์</span><strong>{{ cur['orders'] }}</strong><small>เฉลี่ย {{ cur['aov']|baht }} ต่อออเดอร์</small></div>
+  <div class="stat"><span>จำนวนสินค้าที่ขายได้</span><strong>{{ cur['units'] }}</strong><small>ชิ้น</small></div>
+  <div class="stat"><span>{{ 'วันที่ขายดีสุด' if gran == 'day' else 'เดือนที่ขายดีสุด' }}</span>
+    <strong>{{ best_slot['label'] if best_slot else '–' }}</strong><small>{{ best_slot['amount']|baht if best_slot else 'ยังไม่มียอดขาย' }}</small></div>
+</section>
+
+<section class="panel">
+  <h2>{{ 'ยอดขายรายวัน' if gran == 'day' else 'ยอดขายรายเดือน' }}</h2>
+  <div class="bars wide" style="grid-template-columns: repeat({{ chart|length }}, 1fr)" role="img" aria-label="กราฟยอดขาย">
+    {% for c in chart %}
+    <div class="bar" title="{{ c['label'] }}: {{ c['amount']|baht }}">
+      <span class="bar-val">{% if gran == 'month' %}{{ c['amount']|baht if c['amount'] else '–' }}{% endif %}</span>
+      <div class="bar-fill" style="height: {{ c['pct'] }}%"></div>
+      <span class="bar-label">{{ c['label'] if (gran == 'month' or loop.index % (7 if kind == 'range' else 5) == 1 or loop.last) else '' }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="cols" style="margin-top:20px">
+  <section class="panel">
+    <h2>🔥 ควรเตรียมสั่งเพิ่ม</h2>
+    {% if restock %}<ul class="plain">{% for i in restock %}<li><a href="{{ url_for('admin.product_form', pid=i['id']) }}">{{ i['name'] }}</a>
+      <span class="small muted">{{ i['note'] }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">ยังไม่มีสินค้าที่ต้องเร่งสั่งเพิ่ม</p>{% endif %}
+  </section>
+  <section class="panel">
+    <h2>🧊 ไม่ควรสั่งเพิ่ม (ขายช้า/ไม่มีคนสนใจ)</h2>
+    {% if cold %}<ul class="plain">{% for i in cold %}<li><a href="{{ url_for('admin.product_form', pid=i['id']) }}">{{ i['name'] }}</a>
+      <span class="small muted">{{ i['note'] }} · สต็อก {{ i['stock'] }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">{{ 'ยังไม่มียอดขายในช่วงนี้ จึงยังสรุปไม่ได้' if not total_qty else 'ทุกสินค้ามียอดขายปกติ' }}</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel flush" style="margin-top:20px"><div class="table-wrap">
+  <table>
+    <thead><tr><th>#</th><th>สินค้า</th><th class="num">ขายได้ (ชิ้น)</th><th class="num">สัดส่วน</th><th class="num">ยอดขายสินค้า</th><th class="num">♥ ถูกใจ</th><th class="num">สต็อก</th><th>คำแนะนำ</th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url_for('admin.product_form', pid=i['id']) }}">{{ i['name'] }}</a></td>
+        <td class="num"><strong>{{ i['qty'] }}</strong></td>
+        <td class="num"><span class="share"><i style="width: {{ i['share'] }}%"></i></span> {{ i['share'] }}%</td>
+        <td class="num">{{ i['amount']|baht }}</td>
+        <td class="num">{{ i['hearts'] }}</td>
+        <td class="num">{{ i['stock'] }}</td>
+        <td><span class="pill verdict {{ i['kind'] }}">{{ i['note'] }}</span></td>
+      </tr>
+    {% else %}<tr><td colspan="8" class="muted">ยังไม่มีสินค้า</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div></section>
+<p class="muted small">คำแนะนำคำนวณจากยอดขายในช่วงที่เลือกเทียบกับค่าเฉลี่ยของสินค้าที่ขายอยู่ (ขายช้า = น้อยกว่า {{ (0.5 * 100)|int }}% ของค่าเฉลี่ย) และประเมินจำนวนวันที่สต็อกพอขายจากอัตราขายต่อวัน{% if total_qty < 10 %} — <strong>ตอนนี้ข้อมูลยังน้อย (ขายได้ {{ total_qty }} ชิ้น) ใช้ประกอบการตัดสินใจเท่านั้น</strong>{% endif %}</p>
+{% endblock %}

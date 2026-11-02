@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% block title %}ลูกค้าสมาชิก{% endblock %}
+{% block content %}
+<div class="head-row"><h1>ลูกค้าสมาชิก</h1></div>
+<form class="searchbar" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="ค้นหาชื่อ อีเมล หรือเบอร์โทร" aria-label="ค้นหาลูกค้า">
+  <button class="btn" type="submit">ค้นหา</button>
+</form>
+<div class="panel flush"><div class="table-wrap">
+<table>
+  <thead><tr><th>ชื่อ</th><th>อีเมล</th><th>เบอร์โทร</th><th class="num">ออเดอร์</th><th class="num">ยอดซื้อสะสม</th><th>สมัครเมื่อ</th><th>สถานะ</th></tr></thead>
+  <tbody>
+  {% for u in rows %}
+  <tr class="{{ 'dim' if not u['active'] }}">
+    <td><a href="{{ url_for('admin.customer_detail', uid=u['id']) }}"><strong>{{ u['name'] }}</strong></a></td>
+    <td>{{ u['email'] }}</td><td>{{ u['phone'] or '–' }}</td>
+    <td class="num">{{ u['orders_n'] }}</td><td class="num">{{ u['spent']|baht }}</td>
+    <td class="small">{{ u['joined'] }}</td>
+    <td>{% if u['active'] %}<span class="pill paid">ปกติ</span>{% else %}<span class="pill cancelled">ถูกระงับ</span>{% endif %}</td>
+  </tr>
+  {% else %}<tr><td colspan="7" class="muted">ยังไม่มีสมาชิก</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% endblock %}

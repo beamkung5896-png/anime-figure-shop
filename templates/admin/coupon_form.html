@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'แก้ไขโค้ด' if c else 'สร้างโค้ดใหม่' }}{% endblock %}
+{% block content %}
+<div class="head-row"><h1>{{ 'แก้ไขโค้ด ' ~ c['code'] if c else 'สร้างโค้ดส่วนลด' }}</h1><a href="{{ url_for('admin.coupons') }}">กลับ</a></div>
+{% if errors %}<ul class="errors" role="alert">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+<form class="panel narrow-form" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label for="code">โค้ด (อังกฤษ/ตัวเลข เช่น SAKURA20)</label>
+  <input id="code" name="code" value="{{ form.get('code', '') }}" maxlength="20" required>
+  <div class="two">
+    <div><label for="kind">ประเภทส่วนลด</label>
+      <select id="kind" name="kind">
+        <option value="percent" {{ 'selected' if form.get('kind') == 'percent' }}>เปอร์เซ็นต์ (%)</option>
+        <option value="fixed" {{ 'selected' if form.get('kind') == 'fixed' }}>จำนวนเงิน (บาท)</option>
+      </select></div>
+    <div><label for="value">มูลค่า (% หรือ บาท)</label>
+      <input id="value" name="value" inputmode="numeric" value="{{ form.get('value', '') }}" required></div>
+  </div>
+  <div class="two">
+    <div><label for="min_total">ยอดซื้อขั้นต่ำ (บาท)</label>
+      <input id="min_total" name="min_total" inputmode="numeric" value="{{ form.get('min_total', 0) }}"></div>
+    <div><label for="max_discount">ส่วนลดสูงสุด (เฉพาะแบบ %, 0 = ไม่จำกัด)</label>
+      <input id="max_discount" name="max_discount" inputmode="numeric" value="{{ form.get('max_discount', 0) }}"></div>
+  </div>
+  <div class="two">
+    <div><label for="usage_limit">จำนวนสิทธิ์ทั้งหมด (0 = ไม่จำกัด)</label>
+      <input id="usage_limit" name="usage_limit" inputmode="numeric" value="{{ form.get('usage_limit', 0) }}"></div>
+    <div><label for="expires_at">หมดอายุวันที่ (เว้นว่าง = ไม่หมดอายุ)</label>
+      <input id="expires_at" name="expires_at" type="date" value="{{ form.get('expires_at', '') }}"></div>
+  </div>
+  <label><input type="checkbox" name="once_per_user" value="1" style="width:auto" {{ 'checked' if form.get('once_per_user') }}> จำกัด 1 ครั้งต่อสมาชิก (ใช้ได้เฉพาะสมาชิกที่ล็อกอิน)</label>
+  <label><input type="checkbox" name="active" value="1" style="width:auto" {{ 'checked' if form.get('active') }}> เปิดใช้งาน</label>
+  <button class="btn" type="submit">บันทึก</button>
+</form>
+{% endblock %}

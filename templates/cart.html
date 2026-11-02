@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}ตะกร้าสินค้า · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="page">
+  <h1>ตะกร้าสินค้า</h1>
+  {% if items %}
+  <ul class="cart-list">
+    {% for it in items %}
+    <li class="cart-row">
+      <img src="{{ url_for('static', filename='images/' ~ it.product['image'] ~ '.' ~ it.product['image_ext']) }}" alt="" style="background: {{ it.product['bg'] }}">
+      <div class="cart-name">
+        <a href="{{ url_for('product', pid=it.product['id']) }}">{{ it.product['name'] }}</a>
+        <span class="meta">{{ it.product['price']|baht }} ต่อชิ้น</span>
+      </div>
+      <form class="cart-qty stepper" action="{{ url_for('cart_update', pid=it.product['id']) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="step" type="submit" name="qty" value="{{ it.qty - 1 }}" aria-label="ลดจำนวน" {% if it.qty <= 1 %}disabled{% endif %}>−</button>
+        <span class="qty-num" aria-live="polite" aria-label="จำนวน">{{ it.qty }}</span>
+        <button class="step" type="submit" name="qty" value="{{ it.qty + 1 }}" aria-label="เพิ่มจำนวน" {% if it.qty >= it.product['stock'] %}disabled title="สินค้าเหลือ {{ it.product['stock'] }} ชิ้น"{% endif %}>+</button>
+      </form>
+      <span class="price">{{ it.subtotal|baht }}</span>
+      <form class="cart-remove" action="{{ url_for('cart_update', pid=it.product['id']) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="qty" value="0">
+        <button class="link-btn" type="submit">ลบ</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="cart-total">
+    <span>ยอดรวม <small class="muted">(ยังไม่รวม VAT 7% และค่าส่ง)</small></span><strong>{{ total|baht }}</strong>
+    <a class="btn btn-primary" href="{{ url_for('checkout') }}">ไปหน้าชำระเงิน</a>
+  </div>
+  {% else %}
+  <p class="empty">ตะกร้ายังว่างอยู่ <a href="{{ url_for('index') }}">เลือกฟิกเกอร์ตัวแรก</a></p>
+  {% endif %}
+</section>
+{% endblock %}

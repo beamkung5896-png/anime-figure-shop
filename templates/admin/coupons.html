@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% block title %}คูปองส่วนลด{% endblock %}
+{% block content %}
+<div class="head-row"><h1>คูปองส่วนลด</h1><a class="btn" href="{{ url_for('admin.coupon_form') }}">สร้างโค้ดใหม่</a></div>
+<div class="panel flush"><div class="table-wrap">
+<table>
+  <thead><tr><th>โค้ด</th><th>ส่วนลด</th><th class="num">ขั้นต่ำ</th><th class="num">ใช้แล้ว</th><th>หมดอายุ</th><th>สถานะ</th><th></th></tr></thead>
+  <tbody>
+  {% for c in rows %}
+  {% set expired = c['expires_at'] and c['expires_at'] < today %}
+  <tr class="{{ 'dim' if not c['active'] or expired }}">
+    <td><a href="{{ url_for('admin.coupon_form', cid=c['id']) }}"><strong>{{ c['code'] }}</strong></a>
+      {% if c['once_per_user'] %}<br><span class="muted small">1 ครั้ง/สมาชิก</span>{% endif %}</td>
+    <td>{% if c['kind'] == 'percent' %}{{ c['value'] }}%{% if c['max_discount'] %} (สูงสุด {{ c['max_discount']|baht }}){% endif %}{% else %}{{ c['value']|baht }}{% endif %}</td>
+    <td class="num">{{ c['min_total']|baht if c['min_total'] else '–' }}</td>
+    <td class="num">{{ c['used'] }}{% if c['usage_limit'] %} / {{ c['usage_limit'] }}{% endif %}</td>
+    <td class="small">{{ c['expires_at'] or '–' }}</td>
+    <td>{% if expired %}<span class="pill cancelled">หมดอายุ</span>{% elif c['active'] %}<span class="pill paid">เปิดใช้</span>{% else %}<span class="pill cancelled">ปิด</span>{% endif %}</td>
+    <td class="actions">
+      <a href="{{ url_for('admin.coupon_form', cid=c['id']) }}">แก้ไข</a>
+      <form method="post" action="{{ url_for('admin.coupon_toggle', cid=c['id']) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="linkish" type="submit">{{ 'ปิด' if c['active'] else 'เปิด' }}</button></form>
+      <form method="post" action="{{ url_for('admin.coupon_delete', cid=c['id']) }}" onsubmit="return confirm('ลบโค้ดนี้?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="linkish danger" type="submit">ลบ</button></form>
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="7" class="muted">ยังไม่มีโค้ดส่วนลด</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}ชำระเงิน · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="page two-col">
+  <form class="form" method="post" novalidate id="checkout-form">
+    <h1>ที่อยู่จัดส่ง</h1>
+    {% if errors %}
+    <ul class="errors" role="alert">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {% if not user %}
+    <p class="note">สั่งซื้อแบบไม่ล็อกอิน — <a href="{{ url_for('customers.login', next=url_for('checkout')) }}">เข้าสู่ระบบ</a> เพื่อใช้ที่อยู่ที่บันทึกไว้และดูประวัติออเดอร์</p>
+    {% endif %}
+
+    {% if saved %}
+    <fieldset class="addr-pick">
+      <legend>เลือกที่อยู่ที่บันทึกไว้</legend>
+      {% for a in saved %}
+      <label class="addr-opt"><input type="radio" name="address_id" value="{{ a['id'] }}" {% if form.get('address_id') == a['id']|string %}checked{% endif %}>
+        <span><strong>{{ a['label'] or a['recipient'] }}</strong>{% if a['is_default'] %} <em>(หลัก)</em>{% endif %}<br>
+        {{ a['recipient'] }} · {{ a['phone'] }}<br><small>{{ a['address'] }}</small></span></label>
+      {% endfor %}
+      <label class="addr-opt"><input type="radio" name="address_id" value="new" {% if form.get('address_id', 'new') == 'new' %}checked{% endif %}>
+        <span><strong>ใช้ที่อยู่ใหม่</strong></span></label>
+    </fieldset>
+    {% endif %}
+
+    {% if not user %}
+    <label for="email">อีเมล (ไม่บังคับ — ไว้รับแจ้งสถานะออเดอร์และการจัดส่ง)</label>
+    <input id="email" name="email" type="email" value="{{ form.get('email', '') }}" autocomplete="email">
+    {% endif %}
+    <div id="new-address">
+      <label for="customer">ชื่อผู้รับ</label>
+      <input id="customer" name="customer" value="{{ form.get('customer', '') }}" autocomplete="name">
+      <label for="phone">เบอร์โทร (10 หลัก)</label>
+      <input id="phone" name="phone" inputmode="numeric" maxlength="10" value="{{ form.get('phone', '') }}" autocomplete="tel">
+      <label for="address">ที่อยู่</label>
+      <p class="hint">ตัวอย่าง: 123/45 หมู่ 6 ซอยลาดพร้าว 71 ถนนลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310<br>กรอกให้ครบ: บ้านเลขที่ · หมู่/ซอย/ถนน · ตำบล/แขวง · อำเภอ/เขต · จังหวัด · รหัสไปรษณีย์</p>
+      <textarea id="address" name="address" rows="4" placeholder="เช่น 123/45 หมู่ 6 ซอยลาดพร้าว 71 ถนนลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310">{{ form.get('address', '') }}</textarea>
+      {% if user %}<label class="check"><input type="checkbox" name="save_address" value="1" {% if form.get('save_address') %}checked{% endif %}> บันทึกที่อยู่นี้ไว้ในบัญชี</label>{% endif %}
+    </div>
+
+    <label for="coupon">โค้ดส่วนลด</label>
+    <div class="coupon-row">
+      <input id="coupon" name="coupon" value="{{ code }}" placeholder="เช่น WELCOME10" autocomplete="off">
+      <button class="btn btn-ghost" type="submit" name="action" value="apply" formnovalidate>ใช้โค้ด</button>
+    </div>
+    {% if code and pr['coupon_error'] %}<p class="error-text">{{ pr['coupon_error'] }}</p>
+    {% elif pr['coupon'] %}<p class="ok-text">ใช้โค้ด {{ pr['coupon']['code'] }} แล้ว ลด {{ pr['discount']|baht }}</p>{% endif %}
+
+    <label class="check consent"><input type="checkbox" name="consent" value="1" {% if form.get('consent') %}checked{% endif %}>
+      <span>ฉันยอมรับ<a href="{{ url_for('privacy') }}" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว (PDPA) และเงื่อนไขการสั่งซื้อ</a> และยินยอมให้ร้านเก็บ ใช้ ข้อมูลส่วนบุคคลของฉันเพื่อดำเนินการสั่งซื้อและจัดส่ง</span></label>
+
+    <button class="btn btn-primary" type="submit" name="action" value="place">ยืนยันสั่งซื้อ {{ pr['total']|baht }}</button>
+  </form>
+
+  <aside class="summary">
+    <h2>สรุปรายการ</h2>
+    <ul>
+      {% for it in items %}
+      <li><span>{{ it.product['name'] }} × {{ it.qty }}</span><span>{{ it.subtotal|baht }}</span></li>
+      {% endfor %}
+      <li><span>ยอดสินค้า</span><span>{{ pr['subtotal']|baht }}</span></li>
+      {% if pr['discount'] %}<li><span>ส่วนลด ({{ pr['coupon']['code'] }})</span><span>−{{ pr['discount']|baht }}</span></li>{% endif %}
+      <li><span>ค่าจัดส่ง</span><span>{{ pr['shipping']|baht if pr['shipping'] else 'ฟรี' }}</span></li>
+      <li><span>VAT {{ pr['vat_rate'] }}%</span><span>{{ pr['vat']|baht }}</span></li>
+    </ul>
+    {% if pr['shipping'] and pr['free_min'] %}
+    <p class="muted small">ซื้อเพิ่มอีก {{ (pr['free_min'] - pr['subtotal'] + pr['discount'])|baht }} ส่งฟรี</p>{% endif %}
+    <p class="sum-total"><span>รวมทั้งหมด</span><strong>{{ pr['total']|baht }}</strong></p>
+  </aside>
+</section>
+<script>
+  // เลือกที่อยู่ที่บันทึกไว้ → ซ่อนช่องกรอกที่อยู่ใหม่
+  (function () {
+    const radios = document.querySelectorAll('input[name="address_id"]');
+    const box = document.getElementById('new-address');
+    function sync() {
+      const sel = document.querySelector('input[name="address_id"]:checked');
+      box.hidden = !!(sel && sel.value !== 'new');
+    }
+    radios.forEach(r => r.addEventListener('change', sync));
+    if (radios.length) sync();
+  })();
+</script>
+{% endblock %}

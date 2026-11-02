@@ -1,0 +1,24 @@
+<div id="chat" class="chat{% if chat_inline %} chat-inline{% endif %}" data-url="{{ url_for('chat.messages') }}" hidden>
+  <section class="chat-panel" id="chat-panel" role="dialog" aria-label="แชทช่วยเหลือ" {% if not chat_inline %}hidden{% endif %}>
+    <header class="chat-head">
+      <span class="chat-avatar" aria-hidden="true">✨</span>
+      <div><strong>ผู้ช่วยประจำร้าน</strong>
+        <small id="chat-sub">AI ตอบทันที · แอดมินช่วยต่อได้</small></div>
+      <button type="button" id="chat-close" aria-label="ปิดแชท">×</button>
+    </header>
+    <div class="chat-body" id="chat-body" aria-live="polite"></div>
+    <div class="chat-chips" id="chat-chips">
+      <button type="button">ค่าส่งเท่าไหร่</button>
+      <button type="button">ชำระเงินยังไง</button>
+      <button type="button">ติดตามพัสดุ</button>
+      <button type="button" data-human>คุยกับแอดมิน</button>
+    </div>
+    <form class="chat-form" id="chat-form" autocomplete="off">
+      <input id="chat-input" maxlength="500" placeholder="พิมพ์ข้อความ…" aria-label="พิมพ์ข้อความ">
+      <button type="submit" aria-label="ส่ง">➤</button>
+    </form>
+  </section>
+  <button type="button" class="chat-fab" id="chat-fab" aria-label="เปิดแชทช่วยเหลือ" aria-expanded="false">
+    <span>💬</span><i class="chat-dot" id="chat-dot" hidden></i>
+  </button>
+</div>

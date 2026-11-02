@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% from "admin/_datefilter.html" import date_filter with context %}
+{% block title %}รีวิวสินค้า{% endblock %}
+{% block content %}
+<div class="head-row"><h1>รีวิวสินค้า</h1></div>
+
+<form class="filterbar" method="get" aria-label="กรองรีวิว">
+  <label>สินค้า
+    <select name="product" onchange="this.form.submit()">
+      <option value="">ทุกสินค้า</option>
+      {% for p in products %}<option value="{{ p['id'] }}" {{ 'selected' if pid == p['id']|string }}>{{ p['name']|truncate(40) }} ({{ p['n'] }})</option>{% endfor %}
+    </select>
+  </label>
+  <label>คะแนน
+    <select name="rating" onchange="this.form.submit()">
+      <option value="">ทุกระดับ</option>
+      {% for n in [5, 4, 3, 2, 1] %}<option value="{{ n }}" {{ 'selected' if rating == n|string }}>{{ '★' * n }} ({{ n }} ดาว)</option>{% endfor %}
+    </select>
+  </label>
+  <label>สถานะ
+    <select name="vis" onchange="this.form.submit()">
+      <option value="">ทั้งหมด</option>
+      <option value="shown" {{ 'selected' if vis == 'shown' }}>แสดงอยู่</option>
+      <option value="hidden" {{ 'selected' if vis == 'hidden' }}>ซ่อนอยู่</option>
+    </select>
+  </label>
+  <label>ค้นหา <input type="search" name="q" value="{{ q }}" placeholder="ความเห็น / ชื่อลูกค้า"></label>
+  <input type="hidden" name="d1" value="{{ d1 }}"><input type="hidden" name="d2" value="{{ d2 }}">
+  <button class="btn btn-small" type="submit">ค้นหา</button>
+  {% if filtered %}<a class="btn btn-ghost btn-small" href="{{ url_for('admin.reviews') }}">ล้างตัวกรองทั้งหมด</a>{% endif %}
+</form>
+
+{{ date_filter(d1, d2, {'product': pid, 'rating': rating, 'vis': vis, 'q': q}) }}
+
+{% if products|selectattr('n')|list %}
+<nav class="tabs chips" aria-label="แยกตามสินค้า">
+  <a class="{{ 'on' if not pid }}" href="{{ url_for('admin.reviews', rating=rating or None, vis=vis or None, q=q or None, d1=d1 or None, d2=d2 or None) }}">ทุกสินค้า</a>
+  {% for p in products if p['n'] %}
+  <a class="{{ 'on' if pid == p['id']|string }}" href="{{ url_for('admin.reviews', product=p['id'], rating=rating or None, vis=vis or None, q=q or None, d1=d1 or None, d2=d2 or None) }}">{{ p['name']|truncate(28) }} <span>{{ p['n'] }} · ★{{ p['avg'] }}</span></a>
+  {% endfor %}
+</nav>
+{% endif %}
+
+<p class="muted small summary">พบ <strong>{{ found }}</strong> รีวิว{% if avg %} · คะแนนเฉลี่ย <strong>{{ avg }}</strong>/5{% endif %}{% if found > rows|length %} · แสดง {{ rows|length }} รายการล่าสุด{% endif %}</p>
+
+<div class="panel flush"><div class="table-wrap">
+<table>
+  <thead><tr><th>สินค้า</th><th>ลูกค้า</th><th>คะแนน</th><th>ความเห็น</th><th>เมื่อ</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr class="{{ 'dim' if not r['visible'] }}">
+    <td><a href="{{ url_for('admin.reviews', product=r['product_id']) }}">{{ r['product'] }}</a></td><td>{{ r['author'] }}</td>
+    <td style="color:var(--brass);white-space:nowrap">{{ '★' * r['rating'] }}{{ '☆' * (5 - r['rating']) }}</td>
+    <td class="pre small">{{ r['comment'] or '–' }}</td><td class="small">{{ r['local_time'] }}</td>
+    <td class="actions">
+      <form method="post" action="{{ url_for('admin.review_toggle', rid=r['id']) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="qs" value="{{ qs }}"><button class="linkish" type="submit">{{ 'ซ่อน' if r['visible'] else 'แสดง' }}</button></form>
+      <form method="post" action="{{ url_for('admin.review_delete', rid=r['id']) }}" onsubmit="return confirm('ลบรีวิวนี้ถาวร?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="qs" value="{{ qs }}"><button class="linkish danger" type="submit">ลบ</button></form>
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="6" class="muted">{{ 'ไม่พบรีวิวตามตัวกรองที่เลือก' if filtered else 'ยังไม่มีรีวิว' }}</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% endblock %}

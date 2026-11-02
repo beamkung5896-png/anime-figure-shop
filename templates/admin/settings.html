@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block title %}ตั้งค่าร้าน{% endblock %}
+{% block content %}
+<div class="settings-wrap">
+<h1>ตั้งค่าร้าน</h1>
+{% if errors %}<ul class="errors" role="alert">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+<form class="settings-grid" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section class="panel set-card">
+    <h2>ค่าจัดส่ง</h2>
+    <label for="shipping_fee">ค่าจัดส่งมาตรฐาน (บาท)</label>
+  <input id="shipping_fee" name="shipping_fee" inputmode="numeric" value="{{ cur['shipping_fee'] }}" required>
+  <label for="free_shipping_min">ซื้อครบเท่าไหร่ส่งฟรี (บาท, 0 = ไม่มีส่งฟรี)</label>
+  <input id="free_shipping_min" name="free_shipping_min" inputmode="numeric" value="{{ cur['free_shipping_min'] }}" required>
+  <p class="muted small">เกณฑ์ส่งฟรีคิดจากยอดสินค้าหลังหักส่วนลดแล้ว มีผลกับออเดอร์ใหม่เท่านั้น</p>
+  </section>
+  <section class="panel set-card">
+    <h2>ข้อมูลติดต่อร้าน</h2>
+    <p class="muted small">แสดงท้ายเว็บ หน้า “ติดต่อเรา” หน้าออเดอร์ และท้ายอีเมลที่ส่งถึงลูกค้า (ลูกค้ากดตอบกลับอีเมลจะไปที่อีเมลร้าน)</p>
+  <label for="contact_email">อีเมลร้าน</label>
+  <input id="contact_email" name="contact_email" type="email" value="{{ cur['contact_email'] }}">
+  <label for="contact_phone">เบอร์โทร</label>
+  <input id="contact_phone" name="contact_phone" value="{{ cur['contact_phone'] }}">
+  <label for="contact_line">LINE ID</label>
+  <input id="contact_line" name="contact_line" value="{{ cur['contact_line'] }}">
+  <label for="contact_hours">เวลาทำการ (เช่น ทุกวัน 10:00–19:00)</label>
+  <input id="contact_hours" name="contact_hours" value="{{ cur['contact_hours'] }}">
+  </section>
+  <section class="panel set-card">
+    <h2>แชทช่วยเหลือลูกค้า</h2>
+    <label class="check"><input type="checkbox" name="chat_enabled" value="1" {{ 'checked' if cur['chat_enabled'] == 1 }}> เปิดปุ่มแชทที่หน้าร้าน (AI ตอบก่อน แอดมินเข้ามาตอบต่อได้ที่เมนู “แชทลูกค้า”)</label>
+  <p class="muted small">{% if ai %}AI จริงเปิดใช้งานอยู่ ({{ "Google Gemini" if provider == "gemini" else "Claude" }}) · แก้ความรู้เสริมของ AI ได้ที่ไฟล์ <code>shop_info.txt</code>
+    {% if ai_error %}<br><strong style="color:#c0324f">เรียก AI ล่าสุดไม่สำเร็จ:</strong> <code>{{ ai_error }}</code>{% elif ai_model %}<br>โมเดลที่ใช้: <code>{{ ai_model }}</code>{% endif %}{% else %}ยังไม่ได้ตั้ง <code>GEMINI_API_KEY</code> ในไฟล์ <code>.env</code> — ตอนนี้บอทตอบด้วยกฎสำเร็จรูป (ค่าส่ง/ชำระเงิน/ราคาสินค้า) แล้วส่งต่อแอดมิน{% endif %}</p>
+  </section>
+  <section class="panel set-card">
+    <h2>ข้อมูลบนใบเสร็จ</h2>
+    <p class="muted small">แสดงที่หัวและท้ายใบเสร็จ/สลิปที่พิมพ์ (เว้นว่างได้ ถ้าไม่ต้องการแสดง)</p>
+  <label for="shop_name">ชื่อร้าน</label>
+  <input id="shop_name" name="shop_name" value="{{ cur['shop_name'] }}" maxlength="100">
+  <label for="shop_address">ที่อยู่ร้าน</label>
+  <textarea id="shop_address" name="shop_address" rows="3" maxlength="300">{{ cur['shop_address'] }}</textarea>
+  <label for="shop_tax_id">เลขประจำตัวผู้เสียภาษี (ถ้ามี)</label>
+  <input id="shop_tax_id" name="shop_tax_id" value="{{ cur['shop_tax_id'] }}" maxlength="100">
+  <label for="receipt_footer">ข้อความท้ายใบเสร็จ</label>
+  <input id="receipt_footer" name="receipt_footer" value="{{ cur['receipt_footer'] }}" maxlength="100">
+  </section>
+  <div class="set-save"><button class="btn" type="submit">บันทึกการตั้งค่า</button></div>
+</form>
+<div class="panel set-card set-mail">
+  <h2>อีเมลอัตโนมัติถึงลูกค้า</h2>
+  <p class="small">ระบบส่งอีเมลเมื่อ: รับออเดอร์ · ยืนยันชำระเงิน · จัดส่งแล้ว (พร้อมเลขพัสดุ) · อัปเดตเลขพัสดุ · ยกเลิกออเดอร์ · ลืมรหัสผ่าน</p>
+  {% if smtp %}<p>เปิดใช้งานอยู่</p>
+  <form method="post" action="{{ url_for('admin.test_mail') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="to">ส่งอีเมลทดสอบไปที่</label>
+    <input id="to" name="to" type="email" required>
+    <button class="btn btn-small" type="submit" style="margin-top:10px">ส่งทดสอบ</button>
+  </form>
+  {% else %}<p class="muted">ยังไม่ได้ตั้งค่า SMTP — ตอนนี้ลิงก์รีเซ็ตจะแสดงในหน้าจอเซิร์ฟเวอร์ และคุณสร้างลิงก์ให้ลูกค้าเองได้ที่หน้าลูกค้า
+  ถ้าต้องการให้ส่งอีเมลจริง ตั้งตัวแปร <code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>, <code>SMTP_FROM</code> ก่อนรัน</p>{% endif %}
+</div>
+</div>
+{% endblock %}

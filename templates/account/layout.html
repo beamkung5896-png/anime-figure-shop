@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}บัญชีของฉัน · Anime Figure Shop{% endblock %}
+{% block content %}
+<section class="page account">
+  <aside class="acct-nav" aria-label="เมนูบัญชี">
+    <p class="acct-who"><strong>{{ user['name'] }}</strong><br><span class="muted small">{{ user['email'] }}</span></p>
+    <a class="{{ 'on' if tab == 'home' }}" href="{{ url_for('customers.account') }}">ภาพรวม</a>
+    <a class="{{ 'on' if tab == 'orders' }}" href="{{ url_for('customers.my_orders') }}">ออเดอร์ของฉัน</a>
+    <a class="{{ 'on' if tab == 'wishlist' }}" href="{{ url_for('customers.wishlist') }}">รายการโปรด</a>
+    <a class="{{ 'on' if tab == 'addresses' }}" href="{{ url_for('customers.addresses') }}">ที่อยู่จัดส่ง</a>
+    <a class="{{ 'on' if tab == 'profile' }}" href="{{ url_for('customers.profile') }}">ข้อมูลส่วนตัว</a>
+    <a class="{{ 'on' if tab == 'password' }}" href="{{ url_for('customers.change_password') }}">เปลี่ยนรหัสผ่าน</a>
+    <form method="post" action="{{ url_for('customers.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="link-btn" type="submit">ออกจากระบบ</button>
+    </form>
+  </aside>
+  <div class="acct-body">{% block acct %}{% endblock %}</div>
+</section>
+{% endblock %}

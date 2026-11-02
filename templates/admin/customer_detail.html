@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ u['name'] }}{% endblock %}
+{% block content %}
+<div class="head-row">
+  <h1>{{ u['name'] }} {% if not u['active'] %}<span class="pill cancelled">ถูกระงับ</span>{% endif %}</h1>
+  <a href="{{ url_for('admin.customers') }}">กลับรายชื่อลูกค้า</a>
+</div>
+<div class="cols">
+  <section class="panel">
+    <h2>ข้อมูลสมาชิก</h2>
+    <p>อีเมล: {{ u['email'] }}<br>เบอร์โทร: {{ u['phone'] or '–' }}<br>
+       สมัครเมื่อ: {{ u['joined'] }}<br>ยินยอม PDPA เมื่อ: {{ u['consent_local'] or 'ไม่มีบันทึก (สมัครก่อนเพิ่มระบบนี้)' }}<br>เข้าสู่ระบบล่าสุด: {{ u['last_seen'] or '–' }}</p>
+    <p><strong>ยอดซื้อสะสม {{ spent|baht }}</strong> · {{ orders|length }} ออเดอร์</p>
+    <form class="status-form" method="post" action="{{ url_for('admin.customer_toggle', uid=u['id']) }}"
+          onsubmit="return confirm('{{ 'ระงับ' if u['active'] else 'เปิดใช้งาน' }}บัญชีนี้?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn {{ 'btn-danger' if u['active'] else 'btn-small' }}" type="submit">{{ 'ระงับบัญชี' if u['active'] else 'เปิดใช้งานบัญชี' }}</button>
+    </form>
+    <form class="status-form" method="post" action="{{ url_for('admin.customer_reset_link', uid=u['id']) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-ghost" type="submit">สร้างลิงก์ตั้งรหัสผ่านใหม่</button>
+      <span class="muted small">ลูกค้าลืมรหัสผ่านและไม่ได้รับอีเมล: กดแล้วคัดลอกลิงก์ส่งให้ลูกค้า</span>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>สมุดที่อยู่</h2>
+    {% for a in addrs %}<p><strong>{{ a['label'] or a['recipient'] }}</strong>{% if a['is_default'] %} <span class="pill paid">หลัก</span>{% endif %}<br>
+      {{ a['recipient'] }} · {{ a['phone'] }}<br><span class="pre small">{{ a['address'] }}</span></p>
+    {% else %}<p class="muted">ยังไม่มีที่อยู่ที่บันทึกไว้</p>{% endfor %}
+  </section>
+</div>
+<section class="panel flush"><div class="table-wrap">
+<table>
+  <thead><tr><th>เลขที่</th><th>วันเวลา</th><th class="num">ยอดรวม</th><th>สถานะ</th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+  <tr><td><a href="{{ url_for('admin.order_detail', oid=o['id']) }}"><strong>#{{ '%05d' % o['id'] }}</strong></a></td>
+    <td class="small">{{ o['local_time'] }}</td><td class="num">{{ o['total']|baht }}</td>
+    <td><span class="pill {{ o['status'] }}">{{ o['status']|status_label }}</span></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">ยังไม่มีออเดอร์</td></tr>{% endfor %}
+  </tbody>
+</table></div></section>
+{% endblock %}
